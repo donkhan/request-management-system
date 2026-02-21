@@ -8,66 +8,74 @@ interface Request {
 
 interface Props {
   requests: Request[];
+  onEdit: (request: Request) => void;
 }
 
-export default function RequestsTable({ requests }: Props) {
-  if (requests.length === 0) {
-    return (
-      <div className="bg-white shadow rounded-2xl p-6 text-center text-gray-500">
-        No requests created yet.
-      </div>
-    );
+export default function RequestsTable({
+  requests,
+  onEdit,
+}: Props) {
+  if (!requests || requests.length === 0) {
+    return <div>No requests found.</div>;
   }
 
   return (
-    <div className="bg-white shadow rounded-2xl overflow-hidden">
-      <table className="min-w-full text-left">
-        <thead className="bg-gray-50 border-b">
+    <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+      <table className="min-w-full">
+        <thead className="bg-gray-100">
           <tr>
-            <th className="px-6 py-3 text-sm font-medium text-gray-600">
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">
               Title
             </th>
-            <th className="px-6 py-3 text-sm font-medium text-gray-600">
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">
               Status
             </th>
-            <th className="px-6 py-3 text-sm font-medium text-gray-600">
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">
               Created At
+            </th>
+            <th className="text-left px-6 py-3 text-sm font-semibold text-gray-600">
+              Action
             </th>
           </tr>
         </thead>
 
         <tbody>
-          {requests.map((req) => (
-            <tr
-              key={req.id}
-              className="border-b hover:bg-gray-50"
-            >
-              <td className="px-6 py-4">
-                <div className="font-medium">{req.title}</div>
-                <div className="text-sm text-gray-500">
-                  {req.description}
-                </div>
-              </td>
+          {requests.map((request) => {
+            const isEditable =
+              request.status === "DRAFT";
 
-              <td className="px-6 py-4">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    req.status === "Pending"
-                      ? "bg-yellow-100 text-yellow-800"
-                      : req.status === "Approved"
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
-                >
-                  {req.status}
-                </span>
-              </td>
+            return (
+              <tr
+                key={request.id}
+                className="border-t hover:bg-gray-50 transition"
+              >
+                <td className="px-6 py-4 text-sm">
+                  {request.title}
+                </td>
 
-              <td className="px-6 py-4 text-sm text-gray-600">
-                {new Date(req.created_at).toLocaleString()}
-              </td>
-            </tr>
-          ))}
+                <td className="px-6 py-4 text-sm">
+                  {request.status}
+                </td>
+
+                <td className="px-6 py-4 text-sm">
+                  {new Date(
+                    request.created_at
+                  ).toLocaleString()}
+                </td>
+
+                <td className="px-6 py-4 text-sm">
+                  {isEditable && (
+                    <button
+                      onClick={() => onEdit(request)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

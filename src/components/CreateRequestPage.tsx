@@ -1,23 +1,53 @@
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "../supabase";
-import {
-  createRequest,
-  uploadDocuments,
-} from "../services/requestService";
+import { saveRequestWithDocuments } from "../services/requestService";
+import ImageSlideshowModal from "../components/ImageSlideshowModal";
 
 interface Props {
+  requestToEdit?: any;
   onBack: () => void;
   onSuccess: () => void;
 }
 
-export default function CreateRequestPage({ onBack, onSuccess }: Props) {
+export default function CreateRequestPage({
+  requestToEdit,
+  onBack,
+  onSuccess,
+}: Props) {
+  const isEditMode = !!requestToEdit;
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [existingDocs, setExistingDocs] = useState<any[]>([]);
+  const [deletedDocIds, setDeletedDocIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<"draft" | "submit" | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ============================
+  // LOAD EXISTING DATA
+  // ============================
+  useEffect(() => {
+    if (requestToEdit) {
+      setTitle(requestToEdit.title);
+      setDescription(requestToEdit.description);
+      fetchExistingDocuments(requestToEdit.id);
+    }
+  }, [requestToEdit]);
+
+  const fetchExistingDocuments = async (requestId: string) => {
+    const { data } = await supabase
+      .from("documents")
+      .select("*")
+      .eq("request_id", requestId);
+
+    setExistingDocs(data || []);
+  };
+
+  const isImageFile = (fileName: string) =>
+    /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
   // ============================
   // FILE HANDLERS
@@ -49,40 +79,53 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
     try {
       setLoading(submit ? "submit" : "draft");
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user?.email) throw new Error("User not authenticated");
-
-      // 1️⃣ Create request
-      const request = await createRequest({
+      await saveRequestWithDocuments({
+        isEditMode,
+        requestToEdit,
         title,
         description,
-        userEmail: user.email,
+        files,
+        existingDocs,
+        deletedDocIds,
         submit,
       });
 
-      // 2️⃣ Upload documents if any
-      if (files.length > 0) {
-        await uploadDocuments(files, request.id);
-      }
+      setFiles([]);
+      setDeletedDocIds([]);
+      setPreviewIndex(null);
 
       onSuccess();
       onBack();
     } catch (err: any) {
-      console.error("Create request error:", err);
+      console.error(err);
       alert(err.message || "Operation failed");
     } finally {
       setLoading(null);
     }
   };
 
+  // ============================
+  // COMBINED DOCUMENTS
+  // ============================
+  const combinedDocs = [
+    ...existingDocs.map((doc) => ({
+      type: "existing",
+      id: doc.id,
+      file_name: doc.file_name,
+      file_path: doc.file_path,
+    })),
+    ...files.map((file, index) => ({
+      type: "new",
+      file,
+      index,
+    })),
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
         <h1 className="text-3xl font-bold mb-8 text-gray-800">
-          Create New Request
+          {isEditMode ? "Edit Request" : "Create New Request"}
         </h1>
 
         {/* TITLE */}
@@ -92,10 +135,9 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
           </label>
           <input
             type="text"
-            placeholder="Enter request title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full border rounded-xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition"
+            className="w-full border rounded-xl p-4"
           />
         </div>
 
@@ -106,10 +148,9 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
           </label>
           <textarea
             rows={5}
-            placeholder="Provide detailed information..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full border rounded-xl p-4 focus:ring-2 focus:ring-blue-500 outline-none transition"
+            className="w-full border rounded-xl p-4"
           />
         </div>
 
@@ -136,49 +177,80 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
             <p className="text-sm text-gray-500 mt-2">
               or click to browse
             </p>
-
-            {files.length > 0 && (
-              <p className="mt-4 text-sm text-blue-600 font-medium">
-                {files.length} file(s) selected
-              </p>
-            )}
           </div>
         </div>
 
-        {/* FILE PREVIEW GRID */}
-        {files.length > 0 && (
+        {/* DOCUMENTS PREVIEW */}
+        {combinedDocs.length > 0 && (
           <div className="mb-10">
             <h2 className="text-lg font-semibold mb-4">
-              Attached Files
+              Documents
             </h2>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {files.map((file, index) => (
+              {combinedDocs.map((item: any, index: number) => (
                 <div
                   key={index}
                   className="relative bg-gray-100 rounded-xl p-4 hover:shadow-md transition cursor-pointer"
-                  onClick={() => setPreviewIndex(index)}
+                  onClick={() => {
+                    if (
+                      item.type === "existing" &&
+                      isImageFile(item.file_name)
+                    ) {
+                      setPreviewIndex(index);
+                    }
+                  }}
                 >
-                  {file.type.startsWith("image") ? (
-                    <img
-                      src={URL.createObjectURL(file)}
-                      className="h-32 w-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <div className="h-32 flex items-center justify-center text-gray-500 text-sm text-center">
-                      📄 {file.name}
-                    </div>
+                  {/* EXISTING FILE */}
+                  {item.type === "existing" && (
+                    <>
+                      <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                        📄 {item.file_name}
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletedDocIds((prev) => [
+                            ...prev,
+                            item.id,
+                          ]);
+                          setExistingDocs((prev) =>
+                            prev.filter((d) => d.id !== item.id)
+                          );
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md"
+                      >
+                        ✕
+                      </button>
+                    </>
                   )}
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      removeFile(index);
-                    }}
-                    className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md"
-                  >
-                    ✕
-                  </button>
+                  {/* NEW FILE */}
+                  {item.type === "new" && (
+                    <>
+                      {item.file.type.startsWith("image") ? (
+                        <img
+                          src={URL.createObjectURL(item.file)}
+                          className="h-32 w-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                          📄 {item.file.name}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFile(item.index);
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md"
+                      >
+                        ✕
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -186,10 +258,10 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
         )}
 
         {/* ACTION BUTTONS */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between">
           <button
             onClick={onBack}
-            className="px-6 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 transition"
+            className="px-6 py-3 bg-gray-200 rounded-xl"
           >
             Back
           </button>
@@ -198,7 +270,7 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
             <button
               onClick={() => handleAction(false)}
               disabled={loading !== null}
-              className="px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition"
+              className="px-6 py-3 bg-gray-500 text-white rounded-xl"
             >
               {loading === "draft" ? "Saving..." : "Save Draft"}
             </button>
@@ -206,66 +278,22 @@ export default function CreateRequestPage({ onBack, onSuccess }: Props) {
             <button
               onClick={() => handleAction(true)}
               disabled={loading !== null}
-              className="px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-md"
+              className="px-8 py-3 bg-blue-600 text-white rounded-xl"
             >
-              {loading === "submit" ? "Submitting..." : "Submit"}
+              {loading === "submit"
+                ? "Submitting..."
+                : "Submit"}
             </button>
           </div>
         </div>
       </div>
 
-      {/* SLIDESHOW MODAL */}
-      {previewIndex !== null && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-3xl w-full relative">
-            <button
-              onClick={() => setPreviewIndex(null)}
-              className="absolute top-4 right-4 text-gray-600"
-            >
-              ✕
-            </button>
-
-            {files[previewIndex].type.startsWith("image") ? (
-              <img
-                src={URL.createObjectURL(files[previewIndex])}
-                className="max-h-[70vh] mx-auto rounded-xl"
-              />
-            ) : (
-              <div className="text-center text-lg text-gray-600">
-                {files[previewIndex].name}
-              </div>
-            )}
-
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={() =>
-                  setPreviewIndex(
-                    previewIndex === 0
-                      ? files.length - 1
-                      : previewIndex - 1
-                  )
-                }
-                className="px-4 py-2 bg-gray-200 rounded-lg"
-              >
-                ◀ Prev
-              </button>
-
-              <button
-                onClick={() =>
-                  setPreviewIndex(
-                    previewIndex === files.length - 1
-                      ? 0
-                      : previewIndex + 1
-                  )
-                }
-                className="px-4 py-2 bg-gray-200 rounded-lg"
-              >
-                Next ▶
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SLIDESHOW FOR EXISTING DOCS ONLY */}
+      <ImageSlideshowModal
+        documents={existingDocs}
+        previewIndex={previewIndex}
+        setPreviewIndex={setPreviewIndex}
+      />
     </div>
   );
 }

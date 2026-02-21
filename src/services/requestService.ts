@@ -1,7 +1,7 @@
 import { supabase } from "../supabase";
 
 // ==========================================
-// CREATE REQUEST (DRAFT or SUBMIT)
+// CREATE REQUEST
 // ==========================================
 export async function createRequest({
   title,
@@ -25,13 +25,11 @@ export async function createRequest({
       .single();
 
     if (error) throw error;
-
-    if (!employee?.reports_to) {
-      throw new Error("No approver configured for this user");
-    }
+    if (!employee?.reports_to)
+      throw new Error("No approver configured");
 
     approver = employee.reports_to;
-    status = "Pending";
+    status = "PENDING";
   }
 
   const { data, error } = await supabase
@@ -49,7 +47,6 @@ export async function createRequest({
     .single();
 
   if (error) throw error;
-
   return data;
 }
 
@@ -60,9 +57,9 @@ export async function uploadDocuments(
   files: File[],
   requestId: string
 ) {
-  if (!files || files.length === 0) return;
+  if (!files.length) return;
 
-  const documentsToInsert = [];
+  const docsToInsert = [];
 
   for (const file of files) {
     const safeName = file.name
@@ -77,16 +74,101 @@ export async function uploadDocuments(
 
     if (uploadError) throw uploadError;
 
-    documentsToInsert.push({
+    docsToInsert.push({
       request_id: requestId,
       file_name: file.name,
       file_path: filePath,
     });
   }
 
-  const { error: insertError } = await supabase
+  const { error } = await supabase
     .from("documents")
-    .insert(documentsToInsert);
+    .insert(docsToInsert);
 
-  if (insertError) throw insertError;
+  if (error) throw error;
+}
+
+// ==========================================
+// SAVE (CREATE OR EDIT)
+// ==========================================
+export async function saveRequestWithDocuments({
+  isEditMode,
+  requestToEdit,
+  title,
+  description,
+  files,
+  existingDocs,
+  deletedDocIds,
+  submit,
+}: any) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) throw new Error("User not authenticated");
+
+  if (isEditMode) {
+    let status = "DRAFT";
+    let approver: string | null = null;
+
+    if (submit) {
+      const { data: employee } = await supabase
+        .from("employees")
+        .select("reports_to")
+        .eq("email", user.email)
+        .single();
+
+      approver = employee?.reports_to || null;
+      status = "PENDING";
+    }
+
+    // Update request
+    await supabase
+      .from("requests")
+      .update({
+        title,
+        description,
+        status,
+        current_approver: approver,
+      })
+      .eq("id", requestToEdit.id);
+
+    // Delete removed docs (DB + Storage)
+    if (deletedDocIds.length > 0) {
+      const docsToDelete = existingDocs.filter((doc: any) =>
+        deletedDocIds.includes(doc.id)
+      );
+
+      const paths = docsToDelete.map(
+        (doc: any) => doc.file_path
+      );
+
+      if (paths.length) {
+        await supabase.storage
+          .from("request-documents")
+          .remove(paths);
+      }
+
+      await supabase
+        .from("documents")
+        .delete()
+        .in("id", deletedDocIds);
+    }
+
+    // Upload new
+    if (files.length) {
+      await uploadDocuments(files, requestToEdit.id);
+    }
+  } else {
+    const request = await createRequest({
+      title,
+      description,
+      userEmail: user.email,
+      submit,
+    });
+
+    if (files.length) {
+      await uploadDocuments(files, request.id);
+    }
+  }
 }

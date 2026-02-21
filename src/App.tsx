@@ -9,6 +9,7 @@ interface Request {
   description: string;
   status: string;
   created_at: string;
+  current_approver?: string | null;
 }
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [requests, setRequests] = useState<Request[]>([]);
   const [view, setView] = useState<"dashboard" | "create">("dashboard");
+  const [editingRequest, setEditingRequest] = useState<Request | null>(null);
 
   // ==========================
   // AUTH INIT
@@ -42,32 +44,33 @@ export default function App() {
   }, []);
 
   // ==========================
-  // FETCH REQUESTS
+  // FETCH REQUESTS (GLOBAL)
   // ==========================
-  useEffect(() => {
+  const fetchRequests = async () => {
     if (!user?.email) {
       setRequests([]);
       return;
     }
 
-    const fetchRequests = async () => {
-      setDataLoading(true);
+    setDataLoading(true);
 
-      const { data, error } = await supabase
-        .from("requests")
-        .select("*")
-        .eq("created_by", user.email)
-        .order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("created_by", user.email)
+      .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Fetch error:", error);
-      } else {
-        setRequests(data || []);
-      }
+    if (error) {
+      console.error("Fetch error:", error);
+    } else {
+      setRequests(data || []);
+    }
 
-      setDataLoading(false);
-    };
+    setDataLoading(false);
+  };
 
+  // Fetch whenever user changes
+  useEffect(() => {
     fetchRequests();
   }, [user]);
 
@@ -78,8 +81,8 @@ export default function App() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-      redirectTo: window.location.origin,
-    },
+        redirectTo: window.location.origin,
+      },
     });
   };
 
@@ -91,6 +94,7 @@ export default function App() {
     setUser(null);
     setRequests([]);
     setView("dashboard");
+    setEditingRequest(null);
   };
 
   // ==========================
@@ -127,13 +131,21 @@ export default function App() {
   }
 
   // ==========================
-  // CREATE PAGE
+  // CREATE / EDIT PAGE
   // ==========================
   if (view === "create") {
     return (
       <CreateRequestPage
-        onBack={() => setView("dashboard")}
-        onSuccess={() => setView("dashboard")}
+        requestToEdit={editingRequest}
+        onBack={() => {
+          setEditingRequest(null);
+          setView("dashboard");
+        }}
+        onSuccess={async () => {
+          await fetchRequests();
+          setEditingRequest(null);
+          setView("dashboard");
+        }}
       />
     );
   }
@@ -144,9 +156,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">
-          My Requests
-        </h1>
+        <h1 className="text-xl font-semibold">My Requests</h1>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 bg-gray-100 px-4 py-2 rounded-2xl shadow-sm">
@@ -181,12 +191,13 @@ export default function App() {
 
       <main className="p-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">
-            Your Requests
-          </h2>
+          <h2 className="text-lg font-semibold">Your Requests</h2>
 
           <button
-            onClick={() => setView("create")}
+            onClick={() => {
+              setEditingRequest(null);
+              setView("create");
+            }}
             className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
           >
             + New Request
@@ -196,7 +207,13 @@ export default function App() {
         {dataLoading ? (
           <div>Loading requests...</div>
         ) : (
-          <RequestsTable requests={requests} />
+          <RequestsTable
+            requests={requests}
+            onEdit={(req: Request) => {
+              setEditingRequest(req);
+              setView("create");
+            }}
+          />
         )}
       </main>
     </div>
