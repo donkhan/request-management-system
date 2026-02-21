@@ -42,7 +42,7 @@ export default function App() {
   }, []);
 
   // ==========================
-  // FETCH REQUESTS (when user changes)
+  // FETCH REQUESTS
   // ==========================
   useEffect(() => {
     if (!user?.email) {
@@ -77,6 +77,9 @@ export default function App() {
   const handleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
+      options: {
+      redirectTo: window.location.origin,
+    },
     });
   };
 
@@ -91,7 +94,7 @@ export default function App() {
   };
 
   // ==========================
-  // AUTH LOADING SCREEN
+  // AUTH LOADING
   // ==========================
   if (authLoading) {
     return (
@@ -146,13 +149,30 @@ export default function App() {
         </h1>
 
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-600">
-            {user.email}
-          </span>
+          <div className="flex items-center gap-3 bg-gray-100 px-4 py-2 rounded-2xl shadow-sm">
+            {user.user_metadata?.avatar_url && (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt="Profile"
+                className="w-9 h-9 rounded-full border"
+              />
+            )}
+
+            <div className="flex flex-col text-sm">
+              <span className="font-semibold text-gray-800 leading-tight">
+                {user.user_metadata?.full_name ||
+                  user.user_metadata?.name ||
+                  "User"}
+              </span>
+              <span className="text-gray-500 text-xs leading-tight">
+                {user.email}
+              </span>
+            </div>
+          </div>
 
           <button
             onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+            className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition"
           >
             Logout
           </button>
