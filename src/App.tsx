@@ -10,127 +10,83 @@ interface Request {
   description: string;
   status: string;
   created_at: string;
+  created_by?: string | null;
   current_approver?: string | null;
-  created_by: string;
 }
 
 export default function App() {
-  const [authLoading, setAuthLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [employeeProfile, setEmployeeProfile] = useState<any>(null);
 
   const [myRequests, setMyRequests] = useState<Request[]>([]);
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
 
-  const [view, setView] = useState<"dashboard" | "create">("dashboard");
-  const [editingRequest, setEditingRequest] = useState<Request | null>(null);
+  const [view, setView] = useState<
+    "dashboard" | "create" | "approval"
+  >("dashboard");
 
-  // ==========================
-  // FETCH EMPLOYEE PROFILE
-  // ==========================
+  const [selectedRequest, setSelectedRequest] =
+    useState<Request | null>(null);
+
   const fetchEmployeeProfile = async (email: string) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("employees")
       .select("*")
       .eq("email", email)
       .single();
 
-    if (error) {
-      console.error("Employee fetch error:", error);
-      setEmployeeProfile(null);
-    } else {
-      setEmployeeProfile(data);
-    }
+    setEmployeeProfile(data || null);
   };
 
-  // ==========================
-  // FETCH REQUEST DATA
-  // ==========================
-  const fetchAllData = async () => {
-    if (!user?.email) {
-      setMyRequests([]);
-      setMyApprovals([]);
-      return;
-    }
+  const fetchAllData = async (email: string) => {
+    const { data: requestsData } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("created_by", email)
+      .order("created_at", { ascending: false });
 
-    setDataLoading(true);
+    setMyRequests(requestsData || []);
 
-    // My Requests
-    const { data: requestsData, error: requestsError } =
-      await supabase
-        .from("requests")
-        .select("*")
-        .eq("created_by", user.email)
-        .order("created_at", { ascending: false });
+    const { data: approvalsData } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("current_approver", email)
+      .eq("status", "PENDING")
+      .order("created_at", { ascending: false });
 
-    if (requestsError) {
-      console.error("My Requests error:", requestsError);
-    } else {
-      setMyRequests(requestsData || []);
-    }
-
-    // My Approvals
-    const { data: approvalsData, error: approvalsError } =
-      await supabase
-        .from("requests")
-        .select("*")
-        .eq("current_approver", user.email)
-        .eq("status", "PENDING")
-        .order("created_at", { ascending: false });
-
-    if (approvalsError) {
-      console.error("My Approvals error:", approvalsError);
-    } else {
-      setMyApprovals(approvalsData || []);
-    }
-
-    setDataLoading(false);
+    setMyApprovals(approvalsData || []);
   };
 
-  // ==========================
-  // AUTH INIT
-  // ==========================
   useEffect(() => {
-    const initAuth = async () => {
-      const { data } = await supabase.auth.getUser();
-      const loggedUser = data.user ?? null;
-      setUser(loggedUser);
-
-      if (loggedUser?.email) {
-        await fetchEmployeeProfile(loggedUser.email);
-      }
-
-      setAuthLoading(false);
-    };
-
-    initAuth();
-
     const { data: listener } = supabase.auth.onAuthStateChange(
-  (_event, session) => {
-    const loggedUser = session?.user ?? null;
-    setUser(loggedUser);
-
-    if (!loggedUser) {
-      setEmployeeProfile(null);
-    }
-  }
-);
+      async (_event, session) => {
+        if (session?.user?.email) {
+          setUser(session.user);
+          await fetchEmployeeProfile(session.user.email);
+          await fetchAllData(session.user.email);
+        }
+      }
+    );
 
     return () => {
       listener.subscription.unsubscribe();
     };
   }, []);
 
-  // Refetch requests when user changes
-  useEffect(() => {
-    fetchAllData();
-  }, [user]);
+  const handleDevLogin = async (email: string) => {
+    const fakeUser = {
+      email,
+      user_metadata: {
+        full_name: email.split("@")[0],
+      },
+    };
 
-  // ==========================
-  // LOGIN
-  // ==========================
-  const handleLogin = async () => {
+    setUser(fakeUser);
+    await fetchEmployeeProfile(email);
+    await fetchAllData(email);
+  };
+
+  const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
@@ -139,9 +95,6 @@ export default function App() {
     });
   };
 
-  // ==========================
-  // LOGOUT
-  // ==========================
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -149,34 +102,44 @@ export default function App() {
     setMyRequests([]);
     setMyApprovals([]);
     setView("dashboard");
-    setEditingRequest(null);
+    setSelectedRequest(null);
   };
 
-  // ==========================
-  // AUTH LOADING
-  // ==========================
-  if (authLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        Loading...
-      </div>
-    );
-  }
-
-  // ==========================
+  // ======================
   // LOGIN SCREEN
-  // ==========================
+  // ======================
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-10 rounded-3xl shadow-xl text-center">
-          <h1 className="text-2xl font-bold mb-6">
+        <div className="bg-white p-10 rounded-3xl shadow-xl text-center space-y-6">
+          <h1 className="text-2xl font-bold">
             Request Management System
           </h1>
 
+          <select
+            onChange={(e) => handleDevLogin(e.target.value)}
+            className="w-full border rounded-xl p-3"
+            defaultValue=""
+          >
+            <option value="" disabled>
+              Select Dev User
+            </option>
+            <option value="kamil.k@cmr.edu.in">
+              kamil.k@cmr.edu.in
+            </option>
+            <option value="ashokkumar.t@cmr.edu.in">
+              ashokkumar.t@cmr.edu.in
+            </option>
+            <option value="provc.praveen@cmr.edu.in">
+              provc.praveen@cmr.edu.in
+            </option>
+          </select>
+
+          <div className="text-gray-400">OR</div>
+
           <button
-            onClick={handleLogin}
-            className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition"
+            onClick={handleGoogleLogin}
+            className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition w-full"
           >
             Login with Google
           </button>
@@ -185,29 +148,51 @@ export default function App() {
     );
   }
 
-  // ==========================
+  // ======================
   // CREATE / EDIT PAGE
-  // ==========================
+  // ======================
   if (view === "create") {
     return (
       <CreateRequestPage
-        requestToEdit={editingRequest}
+        mode={selectedRequest ? "edit" : "create"}
+        requestToEdit={selectedRequest || undefined}
         onBack={() => {
-          setEditingRequest(null);
           setView("dashboard");
+          setSelectedRequest(null);
         }}
         onSuccess={async () => {
-          await fetchAllData();
-          setEditingRequest(null);
+          await fetchAllData(user.email);
           setView("dashboard");
+          setSelectedRequest(null);
         }}
       />
     );
   }
 
-  // ==========================
+  // ======================
+  // APPROVAL PAGE
+  // ======================
+  if (view === "approval" && selectedRequest) {
+    return (
+      <CreateRequestPage
+        mode="approval"
+        requestToEdit={selectedRequest}
+        onBack={() => {
+          setView("dashboard");
+          setSelectedRequest(null);
+        }}
+        onSuccess={async () => {
+          await fetchAllData(user.email);
+          setView("dashboard");
+          setSelectedRequest(null);
+        }}
+      />
+    );
+  }
+
+  // ======================
   // DASHBOARD
-  // ==========================
+  // ======================
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
@@ -231,9 +216,6 @@ export default function App() {
       </header>
 
       <main className="p-8 space-y-12">
-        {/* ===================== */}
-        {/* MY REQUESTS */}
-        {/* ===================== */}
         <section>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold">
@@ -242,7 +224,7 @@ export default function App() {
 
             <button
               onClick={() => {
-                setEditingRequest(null);
+                setSelectedRequest(null);
                 setView("create");
               }}
               className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
@@ -251,38 +233,27 @@ export default function App() {
             </button>
           </div>
 
-          {dataLoading ? (
-            <div>Loading...</div>
-          ) : (
-            <RequestsTable
-              requests={myRequests}
-              onEdit={(req: Request) => {
-                setEditingRequest(req);
-                setView("create");
-              }}
-            />
-          )}
+          <RequestsTable
+            requests={myRequests}
+            onEdit={(req) => {
+              setSelectedRequest(req);
+              setView("create");
+            }}
+          />
         </section>
 
-        {/* ===================== */}
-        {/* MY APPROVALS */}
-        {/* ===================== */}
         <section>
           <h2 className="text-lg font-semibold mb-6">
             My Approvals
           </h2>
 
-          {dataLoading ? (
-            <div>Loading...</div>
-          ) : (
-            <RequestsTable
-              requests={myApprovals}
-              onEdit={(req: Request) => {
-                setEditingRequest(req);
-                setView("create");
-              }}
-            />
-          )}
+          <RequestsTable
+            requests={myApprovals}
+            onView={(req) => {
+              setSelectedRequest(req);
+              setView("approval");
+            }}
+          />
         </section>
       </main>
     </div>

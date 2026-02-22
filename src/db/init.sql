@@ -55,43 +55,14 @@ values
 ('SOM'),
 ('VC-OFFICE');
 
--- =========================================
--- INSERT EMPLOYEES (WITHOUT hierarchy first)
--- =========================================
-insert into employees (email, name, role, dept_id)
+insert into employees (email, role, dept_id,reports_to)
 values
-('routetokamil@gmail.com', 'Faculty User', 'Faculty',
- (select id from departments where name = 'SSCS')),
+('provc.praveen@cmr.edu.in',  'ProVC', 'VC-OFFICE',null),
+('ashokkumar.t@cmr.edu.in',  'Director','SSCS','provc.praveen@cmr.edu.in'),
+('kamil.k@cmr.edu.in',  'Faculty','SSCS','ashokkumar.t@cmr.edu.in')
+;
 
-('kamil.k@cmr.edu.in', 'Director User', 'Director',
- (select id from departments where name = 'SSCS')),
 
-('23f3004493@ds.study.iitm.ac.in', 'Pro VC User', 'ProVC',
- (select id from departments where name = 'VC-OFFICE'));
-
--- =========================================
--- SET HIERARCHY (reports_to)
--- Faculty → Director → Pro VC
--- =========================================
-
--- Faculty reports to Director
-update employees
-set reports_to = (
-    select id from employees where email = 'kamil.k@cmr.edu.in'
-)
-where email = 'routetokamil@gmail.com';
-
--- Director reports to Pro VC
-update employees
-set reports_to = (
-    select id from employees where email = '23f3004493@ds.study.iitm.ac.in'
-)
-where email = 'kamil.k@cmr.edu.in';
-
--- Pro VC reports to NULL (top level)
-update employees
-set reports_to = null
-where email = '23f3004493@ds.study.iitm.ac.in';
 
 
 

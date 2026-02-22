@@ -1,8 +1,5 @@
 import { supabase } from "../supabase";
 
-// ==========================================
-// CREATE REQUEST
-// ==========================================
 export async function createRequest({
   title,
   description,
@@ -50,9 +47,6 @@ export async function createRequest({
   return data;
 }
 
-// ==========================================
-// UPLOAD DOCUMENTS
-// ==========================================
 export async function uploadDocuments(
   files: File[],
   requestId: string
@@ -88,9 +82,6 @@ export async function uploadDocuments(
   if (error) throw error;
 }
 
-// ==========================================
-// SAVE (CREATE OR EDIT)
-// ==========================================
 export async function saveRequestWithDocuments({
   isEditMode,
   requestToEdit,
