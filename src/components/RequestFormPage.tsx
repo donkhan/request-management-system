@@ -42,27 +42,50 @@ export default function RequestFormPage({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // =====================================================
+  // WORKFLOW PERMISSION MODEL
+  // =====================================================
+  const status = requestToEdit?.status?.toUpperCase();
+
+  const isOriginator =
+    requestToEdit?.created_by?.toLowerCase() ===
+    currentUser.email?.toLowerCase();
+
+  const isNewRequest = !requestToEdit;
+
+  const isEditableState =
+    status === "DRAFT" || status === "REJECTED_WITH_EDIT";
+
+  const canUpload =
+    !isApprovalMode &&
+    !isViewMode &&
+    (isNewRequest || (isOriginator && isEditableState));
+
+  const canDeleteExisting =
+    isOriginator && isEditableState;
+
+  // =====================================================
+  // LOAD EXISTING REQUEST
+  // =====================================================
   useEffect(() => {
-  if (!requestToEdit) return;
+    if (!requestToEdit) return;
 
-  setTitle(requestToEdit.title);
-  setDescription(requestToEdit.description);
+    setTitle(requestToEdit.title);
+    setDescription(requestToEdit.description);
 
-  fetchRequestDocuments(requestToEdit.id)
-    .then(setExistingDocs)
-    .catch((err) => {
-      console.error("Failed to fetch documents", err);
-    });
-}, [requestToEdit]);
-
-  
+    fetchRequestDocuments(requestToEdit.id)
+      .then(setExistingDocs)
+      .catch((err) =>
+        console.error("Failed to fetch documents", err)
+      );
+  }, [requestToEdit]);
 
   const isImageFile = (fileName: string) =>
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
-  // ----------------------------------------
+  // =====================================================
   // FILE HANDLING
-  // ----------------------------------------
+  // =====================================================
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
@@ -83,6 +106,9 @@ export default function RequestFormPage({
     fileInputRef.current?.click();
   };
 
+  // =====================================================
+  // SAVE / SUBMIT
+  // =====================================================
   const handleAction = async (submit: boolean) => {
     try {
       setLoading(submit ? "submit" : "draft");
@@ -109,9 +135,15 @@ export default function RequestFormPage({
     }
   };
 
-  
+  // =====================================================
+  // APPROVAL ACTIONS
+  // =====================================================
   const handleApprovalAction = async (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED"
+    action:
+      | "APPROVED"
+      | "REJECTED"
+      | "REJECTED_WITH_EDIT"
+      | "FORWARDED"
   ) => {
     try {
       await performApprovalAction({
@@ -146,6 +178,7 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
+
         <h1 className="text-3xl font-bold mb-8 text-gray-800">
           {isApprovalMode
             ? "Approval View"
@@ -185,7 +218,7 @@ export default function RequestFormPage({
         </div>
 
         {/* FILE UPLOAD */}
-        {!isApprovalMode && !isViewMode && (
+        {canUpload && (
           <div className="mb-10">
             <input
               type="file"
@@ -249,7 +282,7 @@ export default function RequestFormPage({
                         </div>
                       )}
 
-                      {!isApprovalMode && !isViewMode && (
+                      {canUpload && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -262,9 +295,31 @@ export default function RequestFormPage({
                       )}
                     </>
                   ) : (
-                    <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
-                      📄 {item.file_name}
-                    </div>
+                    <>
+                      <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                        📄 {item.file_name}
+                      </div>
+
+                      {canDeleteExisting && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletedDocIds((prev) => [
+                              ...prev,
+                              item.id,
+                            ]);
+                            setExistingDocs((prev) =>
+                              prev.filter(
+                                (doc) => doc.id !== item.id
+                              )
+                            );
+                          }}
+                          className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-md"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               ))}
@@ -316,30 +371,10 @@ export default function RequestFormPage({
 
           {isApprovalMode && (
             <div className="flex gap-3">
-              <button
-                onClick={() => handleApprovalAction("APPROVED")}
-                className="px-4 py-2 bg-green-600 text-white rounded-xl"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => handleApprovalAction("REJECTED")}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
-              >
-                Reject With Edit
-              </button>
-              <button
-                onClick={() => handleApprovalAction("FORWARDED")}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl"
-              >
-                Forward
-              </button>
+              <button onClick={() => handleApprovalAction("APPROVED")} className="px-4 py-2 bg-green-600 text-white rounded-xl">Approve</button>
+              <button onClick={() => handleApprovalAction("REJECTED")} className="px-4 py-2 bg-red-600 text-white rounded-xl">Reject</button>
+              <button onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")} className="px-4 py-2 bg-yellow-600 text-white rounded-xl">Reject With Edit</button>
+              <button onClick={() => handleApprovalAction("FORWARDED")} className="px-4 py-2 bg-blue-600 text-white rounded-xl">Forward</button>
             </div>
           )}
         </div>
