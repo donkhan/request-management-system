@@ -73,34 +73,35 @@ export default function App() {
 
   // 🔹 Auth Listener
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session?.user?.email) {
-          const gmail = session.user.email;
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    async (_event, session) => {
+      if (session?.user?.email) {
+        const email = session.user.email;
 
-          // 🔥 Apply development mapping
-          //const effectiveEmail = DEV_EMAIL_MAP[gmail] ?? gmail;
-          const effectiveEmail = gmail;
+        const normalizedUser = {
+          email,
+          name:
+            session.user.user_metadata?.full_name ??
+            session.user.user_metadata?.name ??
+            email,
+          avatar:
+            session.user.user_metadata?.avatar_url ??
+            session.user.user_metadata?.picture ??
+            null,
+        };
 
-          const effectiveUser = {
-            email: effectiveEmail,
-            name:
-              session.user.user_metadata?.full_name ??
-              effectiveEmail,
-          };
+        setUser(normalizedUser);
 
-          setUser(effectiveUser);
-
-          await fetchEmployeeProfile(effectiveEmail);
-          await fetchAllData(effectiveEmail);
-        }
+        await fetchEmployeeProfile(email);
+        await fetchAllData(email);
       }
-    );
+    }
+  );
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
 
   // 🔹 Google Login
   const handleGoogleLogin = async () => {

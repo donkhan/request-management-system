@@ -1,5 +1,9 @@
 interface Props {
-  user: any;
+  user: {
+    email: string;
+    name?: string;
+    avatar?: string | null;
+  };
   employeeProfile: any;
 }
 
@@ -11,19 +15,22 @@ export default function UserProfileBadge({
 
   return (
     <div className="flex items-center gap-3 bg-gray-100 px-4 py-2 rounded-2xl shadow-sm">
-      {user.user_metadata?.avatar_url && (
+
+      {user.avatar ? (
         <img
-          src={user.user_metadata.avatar_url}
+          src={user.avatar}
           alt="Profile"
-          className="w-9 h-9 rounded-full border"
+          className="w-9 h-9 rounded-full border object-cover"
         />
+      ) : (
+        <div className="w-9 h-9 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold text-gray-700">
+          {user.name?.charAt(0).toUpperCase()}
+        </div>
       )}
 
       <div className="flex flex-col text-sm">
         <span className="font-semibold text-gray-800 leading-tight">
-          {user.user_metadata?.full_name ||
-            user.user_metadata?.name ||
-            "User"}
+          {user.name}
         </span>
 
         <span className="text-gray-500 text-xs leading-tight">
