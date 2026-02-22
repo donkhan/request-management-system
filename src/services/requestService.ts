@@ -1,5 +1,8 @@
 import { supabase } from "../supabase";
 
+// -----------------------------
+// CREATE REQUEST
+// -----------------------------
 export async function createRequest({
   title,
   description,
@@ -44,9 +47,24 @@ export async function createRequest({
     .single();
 
   if (error) throw error;
+
+  // 🔥 AUDIT LOG FOR SUBMIT
+  if (submit) {
+    await supabase.from("request_audit_logs").insert({
+      request_id: data.id,
+      action: "SUBMITTED",
+      acted_by: userEmail,
+      acted_to: approver,
+      comment: "Request submitted",
+    });
+  }
+
   return data;
 }
 
+// -----------------------------
+// UPLOAD DOCUMENTS
+// -----------------------------
 export async function uploadDocuments(
   files: File[],
   requestId: string
@@ -82,6 +100,9 @@ export async function uploadDocuments(
   if (error) throw error;
 }
 
+// -----------------------------
+// SAVE / EDIT REQUEST
+// -----------------------------
 export async function saveRequestWithDocuments({
   isEditMode,
   requestToEdit,
@@ -114,7 +135,7 @@ export async function saveRequestWithDocuments({
     }
 
     // Update request
-    await supabase
+    const { data: updatedRequest, error } = await supabase
       .from("requests")
       .update({
         title,
@@ -122,9 +143,24 @@ export async function saveRequestWithDocuments({
         status,
         current_approver: approver,
       })
-      .eq("id", requestToEdit.id);
+      .eq("id", requestToEdit.id)
+      .select()
+      .single();
 
-    // Delete removed docs (DB + Storage)
+    if (error) throw error;
+
+    // 🔥 AUDIT LOG FOR RESUBMIT
+    if (submit) {
+      await supabase.from("request_audit_logs").insert({
+        request_id: updatedRequest.id,
+        action: "SUBMITTED",
+        acted_by: user.email,
+        acted_to: approver,
+        comment: "Request resubmitted",
+      });
+    }
+
+    // Delete removed docs
     if (deletedDocIds.length > 0) {
       const docsToDelete = existingDocs.filter((doc: any) =>
         deletedDocIds.includes(doc.id)
@@ -146,10 +182,11 @@ export async function saveRequestWithDocuments({
         .in("id", deletedDocIds);
     }
 
-    // Upload new
     if (files.length) {
       await uploadDocuments(files, requestToEdit.id);
     }
+
+    return updatedRequest;
   } else {
     const request = await createRequest({
       title,
@@ -161,5 +198,7 @@ export async function saveRequestWithDocuments({
     if (files.length) {
       await uploadDocuments(files, request.id);
     }
+
+    return request;
   }
 }

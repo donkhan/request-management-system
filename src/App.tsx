@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import RequestsTable from "./components/RequestsTable";
-import CreateRequestPage from "./components/CreateRequestPage";
+import RequestFormPage from "./components/RequestFormPage";
 import UserProfileBadge from "./components/UserProfileBadge";
 
 interface Request {
@@ -14,6 +14,17 @@ interface Request {
   current_approver?: string | null;
 }
 
+/*
+  🔥 DEVELOPMENT EMAIL MAPPING
+  Google Gmail → Institutional Email
+  REMOVE or empty this in production.
+*/
+const DEV_EMAIL_MAP: Record<string, string> = {
+  "routetokamil@gmail.com": "ashokkumar.t@cmr.edu.in",
+  "23f3004493@ds.study.iitm.ac.in": "provc.praveen@cmr.edu.in",
+  "kamil.k@cmr.edu.in": "kamil.k@cmr.edu.in",
+};
+
 export default function App() {
   const [user, setUser] = useState<any>(null);
   const [employeeProfile, setEmployeeProfile] = useState<any>(null);
@@ -21,13 +32,15 @@ export default function App() {
   const [myRequests, setMyRequests] = useState<Request[]>([]);
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
 
+  // ✅ Added "view" mode
   const [view, setView] = useState<
-    "dashboard" | "create" | "approval"
+    "dashboard" | "create" | "approval" | "view"
   >("dashboard");
 
   const [selectedRequest, setSelectedRequest] =
     useState<Request | null>(null);
 
+  // 🔹 Fetch employee profile
   const fetchEmployeeProfile = async (email: string) => {
     const { data } = await supabase
       .from("employees")
@@ -38,6 +51,7 @@ export default function App() {
     setEmployeeProfile(data || null);
   };
 
+  // 🔹 Fetch all requests + approvals
   const fetchAllData = async (email: string) => {
     const { data: requestsData } = await supabase
       .from("requests")
@@ -57,13 +71,28 @@ export default function App() {
     setMyApprovals(approvalsData || []);
   };
 
+  // 🔹 Auth Listener
   useEffect(() => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         if (session?.user?.email) {
-          setUser(session.user);
-          await fetchEmployeeProfile(session.user.email);
-          await fetchAllData(session.user.email);
+          const gmail = session.user.email;
+
+          // 🔥 Apply development mapping
+          //const effectiveEmail = DEV_EMAIL_MAP[gmail] ?? gmail;
+          const effectiveEmail = gmail;
+
+          const effectiveUser = {
+            email: effectiveEmail,
+            name:
+              session.user.user_metadata?.full_name ??
+              effectiveEmail,
+          };
+
+          setUser(effectiveUser);
+
+          await fetchEmployeeProfile(effectiveEmail);
+          await fetchAllData(effectiveEmail);
         }
       }
     );
@@ -73,19 +102,7 @@ export default function App() {
     };
   }, []);
 
-  const handleDevLogin = async (email: string) => {
-    const fakeUser = {
-      email,
-      user_metadata: {
-        full_name: email.split("@")[0],
-      },
-    };
-
-    setUser(fakeUser);
-    await fetchEmployeeProfile(email);
-    await fetchAllData(email);
-  };
-
+  // 🔹 Google Login
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -95,8 +112,12 @@ export default function App() {
     });
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  // 🔹 Logout (non-blocking)
+  const handleLogout = () => {
+    supabase.auth.signOut().catch((err) =>
+      console.error("SignOut error:", err)
+    );
+
     setUser(null);
     setEmployeeProfile(null);
     setMyRequests([]);
@@ -105,9 +126,7 @@ export default function App() {
     setSelectedRequest(null);
   };
 
-  // ======================
-  // LOGIN SCREEN
-  // ======================
+  // 🔹 Not Logged In
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-100">
@@ -115,27 +134,6 @@ export default function App() {
           <h1 className="text-2xl font-bold">
             Request Management System
           </h1>
-
-          <select
-            onChange={(e) => handleDevLogin(e.target.value)}
-            className="w-full border rounded-xl p-3"
-            defaultValue=""
-          >
-            <option value="" disabled>
-              Select Dev User
-            </option>
-            <option value="kamil.k@cmr.edu.in">
-              kamil.k@cmr.edu.in
-            </option>
-            <option value="ashokkumar.t@cmr.edu.in">
-              ashokkumar.t@cmr.edu.in
-            </option>
-            <option value="provc.praveen@cmr.edu.in">
-              provc.praveen@cmr.edu.in
-            </option>
-          </select>
-
-          <div className="text-gray-400">OR</div>
 
           <button
             onClick={handleGoogleLogin}
@@ -148,14 +146,13 @@ export default function App() {
     );
   }
 
-  // ======================
-  // CREATE / EDIT PAGE
-  // ======================
+  // 🔹 Create / Edit
   if (view === "create") {
     return (
-      <CreateRequestPage
+      <RequestFormPage
         mode={selectedRequest ? "edit" : "create"}
         requestToEdit={selectedRequest || undefined}
+        currentUser={user}
         onBack={() => {
           setView("dashboard");
           setSelectedRequest(null);
@@ -169,14 +166,33 @@ export default function App() {
     );
   }
 
-  // ======================
-  // APPROVAL PAGE
-  // ======================
+  // 🔹 View Mode (NEW)
+  if (view === "view" && selectedRequest) {
+    return (
+      <RequestFormPage
+        mode="view"
+        requestToEdit={selectedRequest}
+        currentUser={user}
+        onBack={() => {
+          setView("dashboard");
+          setSelectedRequest(null);
+        }}
+        onSuccess={async () => {
+          await fetchAllData(user.email);
+          setView("dashboard");
+          setSelectedRequest(null);
+        }}
+      />
+    );
+  }
+
+  // 🔹 Approval
   if (view === "approval" && selectedRequest) {
     return (
-      <CreateRequestPage
+      <RequestFormPage
         mode="approval"
         requestToEdit={selectedRequest}
+        currentUser={user}
         onBack={() => {
           setView("dashboard");
           setSelectedRequest(null);
@@ -190,9 +206,7 @@ export default function App() {
     );
   }
 
-  // ======================
-  // DASHBOARD
-  // ======================
+  // 🔹 Dashboard
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
@@ -216,6 +230,7 @@ export default function App() {
       </header>
 
       <main className="p-8 space-y-12">
+        {/* My Requests */}
         <section>
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold">
@@ -239,9 +254,14 @@ export default function App() {
               setSelectedRequest(req);
               setView("create");
             }}
+            onView={(req) => {
+              setSelectedRequest(req);
+              setView("view");
+            }}
           />
         </section>
 
+        {/* My Approvals */}
         <section>
           <h2 className="text-lg font-semibold mb-6">
             My Approvals

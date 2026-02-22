@@ -74,23 +74,67 @@ export default function RequestsTable({
                 </td>
 
                 <td className="px-6 py-4 text-sm">
-                  {canEdit && onEdit && (
-                    <button
-                      onClick={() => onEdit(request)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </button>
-                  )}
+                  <div className="flex gap-4 items-center">
 
-                  {!canEdit && onView && (
-                    <button
-                      onClick={() => onView(request)}
-                      className="text-indigo-600 hover:underline"
-                    >
-                      View
-                    </button>
-                  )}
+                    {/* EDIT ICON */}
+                    {canEdit && onEdit && (
+                      <button
+                        onClick={() => onEdit(request)}
+                        title="Edit Request"
+                        className="text-blue-600 hover:text-blue-800 transition"
+                      >
+                        {/* Pencil Icon */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M11 5h2M12 20h9M4 20h4l10-10-4-4L4 16v4z"
+                          />
+                        </svg>
+                      </button>
+                    )}
+
+                    {/* VIEW ICON */}
+                    {!canEdit && onView && (
+                      <button
+                        onClick={() => onView(request)}
+                        title="View Request"
+                        className="text-indigo-600 hover:text-indigo-800 transition"
+                      >
+                        {/* Eye Icon */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5
+                               c4.477 0 8.268 2.943 9.542 7
+                               -1.274 4.057-5.065 7-9.542 7
+                               -4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </button>
+                    )}
+
+                  </div>
                 </td>
               </tr>
             );
