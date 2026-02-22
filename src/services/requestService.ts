@@ -1,8 +1,89 @@
 import { supabase } from "../supabase";
 
-// -----------------------------
-// CREATE REQUEST
-// -----------------------------
+export async function fetchRequestDocuments(requestId: string) {
+  const { data, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("request_id", requestId);
+
+  if (error) throw error;
+
+  return data || [];
+}
+
+export async function performApprovalAction({
+  requestId,
+  action,
+  comment,
+  currentUserEmail,
+  createdBy,
+}: {
+  requestId: string;
+  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED";
+  comment: string;
+  currentUserEmail: string;
+  createdBy: string;
+}) {
+  if (!comment.trim()) {
+    throw new Error("Comment is mandatory.");
+  }
+
+  let updateData: any = {};
+
+  if (action === "APPROVED") {
+    updateData = { status: "APPROVED", current_approver: null };
+  }
+
+  if (action === "REJECTED") {
+    updateData = { status: "REJECTED", current_approver: null };
+  }
+
+  if (action === "REJECTED_WITH_EDIT") {
+    updateData = {
+      status: "REJECTED_WITH_EDIT",
+      current_approver: createdBy,
+    };
+  }
+
+  if (action === "FORWARDED") {
+    const { data: profile, error } = await supabase
+      .from("employees")
+      .select("reports_to")
+      .eq("email", currentUserEmail)
+      .single();
+
+    if (error || !profile?.reports_to) {
+      throw new Error("No manager found for forwarding.");
+    }
+
+    updateData = {
+      status: "PENDING",
+      current_approver: profile.reports_to,
+    };
+  }
+
+  // Update request status
+  const { error: updateError } = await supabase
+    .from("requests")
+    .update(updateData)
+    .eq("id", requestId);
+
+  if (updateError) throw updateError;
+
+  // Insert audit log
+  const { error: auditError } = await supabase
+    .from("request_audit_logs")
+    .insert({
+      request_id: requestId,
+      action,
+      acted_by: currentUserEmail,
+      acted_to: updateData.current_approver,
+      comment,
+    });
+
+  if (auditError) throw auditError;
+}
+
 export async function createRequest({
   title,
   description,

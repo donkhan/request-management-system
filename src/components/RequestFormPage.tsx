@@ -1,6 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { supabase } from "../supabase";
-import { saveRequestWithDocuments } from "../services/requestService";
+import {
+  saveRequestWithDocuments,
+  performApprovalAction,
+  fetchRequestDocuments,
+} from "../services/requestService";
 import ImageSlideshowModal from "../components/ImageSlideshowModal";
 import AuditLog from "../components/AuditLog";
 
@@ -39,32 +42,27 @@ export default function RequestFormPage({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // -------------------------
-  // LOAD EXISTING REQUEST
-  // -------------------------
   useEffect(() => {
-    if (requestToEdit) {
-      setTitle(requestToEdit.title);
-      setDescription(requestToEdit.description);
-      fetchExistingDocuments(requestToEdit.id);
-    }
-  }, [requestToEdit]);
+  if (!requestToEdit) return;
 
-  const fetchExistingDocuments = async (requestId: string) => {
-    const { data } = await supabase
-      .from("documents")
-      .select("*")
-      .eq("request_id", requestId);
+  setTitle(requestToEdit.title);
+  setDescription(requestToEdit.description);
 
-    setExistingDocs(data || []);
-  };
+  fetchRequestDocuments(requestToEdit.id)
+    .then(setExistingDocs)
+    .catch((err) => {
+      console.error("Failed to fetch documents", err);
+    });
+}, [requestToEdit]);
+
+  
 
   const isImageFile = (fileName: string) =>
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
-  // -------------------------
+  // ----------------------------------------
   // FILE HANDLING
-  // -------------------------
+  // ----------------------------------------
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
@@ -85,9 +83,6 @@ export default function RequestFormPage({
     fileInputRef.current?.click();
   };
 
-  // -------------------------
-  // SAVE / SUBMIT
-  // -------------------------
   const handleAction = async (submit: boolean) => {
     try {
       setLoading(submit ? "submit" : "draft");
@@ -101,7 +96,7 @@ export default function RequestFormPage({
         existingDocs,
         deletedDocIds,
         submit,
-        userEmail: currentUser.email,   // 🔥 IMPORTANT
+        userEmail: currentUser.email,
       });
 
       onSuccess();
@@ -114,71 +109,24 @@ export default function RequestFormPage({
     }
   };
 
-  // -------------------------
-  // APPROVAL ACTIONS
-  // -------------------------
+  
   const handleApprovalAction = async (
-    action:
-      | "APPROVE"
-      | "REJECT"
-      | "REJECT_WITH_EDIT"
-      | "FORWARD"
+    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED"
   ) => {
-    if (!comment.trim()) {
-      alert("Comment is mandatory.");
-      return;
+    try {
+      await performApprovalAction({
+        requestId: requestToEdit.id,
+        action,
+        comment,
+        currentUserEmail: currentUser.email,
+        createdBy: requestToEdit.created_by,
+      });
+
+      onSuccess();
+      onBack();
+    } catch (err: any) {
+      alert(err.message || "Approval action failed");
     }
-
-    let updateData: any = {};
-
-    if (action === "APPROVE") {
-      updateData = { status: "APPROVED", current_approver: null };
-    }
-
-    if (action === "REJECT") {
-      updateData = { status: "REJECTED", current_approver: null };
-    }
-
-    if (action === "REJECT_WITH_EDIT") {
-      updateData = {
-        status: "REJECTED_WITH_EDIT",
-        current_approver: requestToEdit.created_by,
-      };
-    }
-
-    if (action === "FORWARD") {
-      const { data: profile } = await supabase
-        .from("employees")
-        .select("reports_to")
-        .eq("email", currentUser.email)
-        .single();
-
-      if (!profile?.reports_to) {
-        alert("No manager found for forwarding.");
-        return;
-      }
-
-      updateData = {
-        status: "PENDING",
-        current_approver: profile.reports_to,
-      };
-    }
-
-    await supabase
-      .from("requests")
-      .update(updateData)
-      .eq("id", requestToEdit.id);
-
-    await supabase.from("request_audit_logs").insert({
-      request_id: requestToEdit.id,
-      action,
-      acted_by: currentUser.email,
-      acted_to: updateData.current_approver,
-      comment,
-    });
-
-    onSuccess();
-    onBack();
   };
 
   const combinedDocs = [
@@ -198,7 +146,6 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-
         <h1 className="text-3xl font-bold mb-8 text-gray-800">
           {isApprovalMode
             ? "Approval View"
@@ -268,9 +215,7 @@ export default function RequestFormPage({
         {/* DOCUMENT PREVIEW */}
         {combinedDocs.length > 0 && (
           <div className="mb-10">
-            <h2 className="text-lg font-semibold mb-4">
-              Documents
-            </h2>
+            <h2 className="text-lg font-semibold mb-4">Documents</h2>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {combinedDocs.map((item: any, index: number) => (
@@ -282,10 +227,9 @@ export default function RequestFormPage({
                       item.type === "existing" &&
                       isImageFile(item.file_name)
                     ) {
-                      const existingIndex =
-                        existingDocs.findIndex(
-                          (d) => d.id === item.id
-                        );
+                      const existingIndex = existingDocs.findIndex(
+                        (d) => d.id === item.id
+                      );
                       if (existingIndex !== -1) {
                         setPreviewIndex(existingIndex);
                       }
@@ -372,18 +316,35 @@ export default function RequestFormPage({
 
           {isApprovalMode && (
             <div className="flex gap-3">
-              <button onClick={() => handleApprovalAction("APPROVE")} className="px-4 py-2 bg-green-600 text-white rounded-xl">Approve</button>
-              <button onClick={() => handleApprovalAction("REJECT")} className="px-4 py-2 bg-red-600 text-white rounded-xl">Reject</button>
-              <button onClick={() => handleApprovalAction("REJECT_WITH_EDIT")} className="px-4 py-2 bg-yellow-600 text-white rounded-xl">Reject With Edit</button>
-              <button onClick={() => handleApprovalAction("FORWARD")} className="px-4 py-2 bg-blue-600 text-white rounded-xl">Forward</button>
+              <button
+                onClick={() => handleApprovalAction("APPROVED")}
+                className="px-4 py-2 bg-green-600 text-white rounded-xl"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleApprovalAction("REJECTED")}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl"
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
+              >
+                Reject With Edit
+              </button>
+              <button
+                onClick={() => handleApprovalAction("FORWARDED")}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl"
+              >
+                Forward
+              </button>
             </div>
           )}
         </div>
 
-        {/* AUDIT TRAIL */}
-        {requestToEdit && (
-          <AuditLog requestId={requestToEdit.id} />
-        )}
+        {requestToEdit && <AuditLog requestId={requestToEdit.id} />}
       </div>
 
       <ImageSlideshowModal
