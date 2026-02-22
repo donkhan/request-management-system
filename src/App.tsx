@@ -144,25 +144,44 @@ export default function App() {
     <div className="min-h-screen bg-gray-100">
 
       {/* HEADER ALWAYS VISIBLE */}
-      <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-semibold">
-          Request Management System
-        </h1>
+      <header className="bg-white shadow-md px-8 py-3 flex items-center justify-between">
 
-        <div className="flex items-center gap-4">
-          <UserProfileBadge
-            user={user}
-            employeeProfile={employeeProfile}
-          />
+  {/* LEFT: Logo + University Name */}
+  <div className="flex items-center gap-5">
 
-          <button
-            onClick={handleLogout}
-            className="bg-red-500 text-white px-4 py-2 rounded-xl hover:bg-red-600 transition"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
+    <img
+      src="/cmr-logo.png"
+      alt="CMR University"
+      className="h-14 w-auto object-contain"
+    />
+
+    <div className="flex flex-col justify-center">
+      <span className="text-2xl font-semibold text-gray-800 leading-tight">
+        CMR University
+      </span>
+      <span className="text-sm text-gray-500 leading-tight tracking-wide">
+        Request Management System
+      </span>
+    </div>
+
+  </div>
+
+  {/* RIGHT: User + Logout */}
+  <div className="flex items-center gap-5">
+    <UserProfileBadge
+      user={user}
+      employeeProfile={employeeProfile}
+    />
+
+    <button
+      onClick={handleLogout}
+      className="bg-red-500 text-white px-5 py-2 rounded-xl hover:bg-red-600 transition font-medium"
+    >
+      Logout
+    </button>
+  </div>
+
+</header>
 
       {/* CONTENT AREA */}
       <main className="p-8">
