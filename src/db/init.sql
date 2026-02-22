@@ -63,6 +63,15 @@ values
 ;
 
 
+insert into employees (email, role, dept_id,reports_to)
+values
+('routetokamil@gmail.com',  'DIRECTOR', 'SSCS','provc.praveen@cmr.edu.in');
+insert into employees (email, role, dept_id,reports_to)
+values
+('23f3004493@ds.study.iitm.ac.in',  'PROVC', 'VC-OFFICE',null);
+
+update employees set reports_to = 'ashokkumar.t@cmr.edu.in' where email = 'kamil.k@cmr.edu.in';
+
 
 
 
@@ -78,3 +87,8 @@ on storage.objects
 for select
 to authenticated
 using (bucket_id = 'request-documents');
+
+CREATE POLICY "Allow select for all"
+ON request_audit_logs
+FOR SELECT
+USING (true);

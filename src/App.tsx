@@ -14,25 +14,19 @@ interface Request {
   current_approver?: string | null;
 }
 
-/*
-  🔥 DEVELOPMENT EMAIL MAPPING
-  Google Gmail → Institutional Email
-  REMOVE or empty this in production.
-*/
-const DEV_EMAIL_MAP: Record<string, string> = {
-  "routetokamil@gmail.com": "ashokkumar.t@cmr.edu.in",
-  "23f3004493@ds.study.iitm.ac.in": "provc.praveen@cmr.edu.in",
-  "kamil.k@cmr.edu.in": "kamil.k@cmr.edu.in",
-};
+interface NormalizedUser {
+  email: string;
+  name?: string;
+  avatar?: string | null;
+}
 
 export default function App() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<NormalizedUser | null>(null);
   const [employeeProfile, setEmployeeProfile] = useState<any>(null);
 
   const [myRequests, setMyRequests] = useState<Request[]>([]);
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
 
-  // ✅ Added "view" mode
   const [view, setView] = useState<
     "dashboard" | "create" | "approval" | "view"
   >("dashboard");
@@ -40,7 +34,7 @@ export default function App() {
   const [selectedRequest, setSelectedRequest] =
     useState<Request | null>(null);
 
-  // 🔹 Fetch employee profile
+  // ---------------- FETCH EMPLOYEE PROFILE ----------------
   const fetchEmployeeProfile = async (email: string) => {
     const { data } = await supabase
       .from("employees")
@@ -51,7 +45,7 @@ export default function App() {
     setEmployeeProfile(data || null);
   };
 
-  // 🔹 Fetch all requests + approvals
+  // ---------------- FETCH REQUESTS ----------------
   const fetchAllData = async (email: string) => {
     const { data: requestsData } = await supabase
       .from("requests")
@@ -71,39 +65,39 @@ export default function App() {
     setMyApprovals(approvalsData || []);
   };
 
-  // 🔹 Auth Listener
+  // ---------------- AUTH LISTENER ----------------
   useEffect(() => {
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    async (_event, session) => {
-      if (session?.user?.email) {
-        const email = session.user.email;
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user?.email) {
+          const email = session.user.email;
 
-        const normalizedUser = {
-          email,
-          name:
-            session.user.user_metadata?.full_name ??
-            session.user.user_metadata?.name ??
+          const normalizedUser: NormalizedUser = {
             email,
-          avatar:
-            session.user.user_metadata?.avatar_url ??
-            session.user.user_metadata?.picture ??
-            null,
-        };
+            name:
+              session.user.user_metadata?.full_name ??
+              session.user.user_metadata?.name ??
+              email,
+            avatar:
+              session.user.user_metadata?.avatar_url ??
+              session.user.user_metadata?.picture ??
+              null,
+          };
 
-        setUser(normalizedUser);
+          setUser(normalizedUser);
 
-        await fetchEmployeeProfile(email);
-        await fetchAllData(email);
+          await fetchEmployeeProfile(email);
+          await fetchAllData(email);
+        }
       }
-    }
-  );
+    );
 
-  return () => {
-    listener.subscription.unsubscribe();
-  };
-}, []);
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
-  // 🔹 Google Login
+  // ---------------- GOOGLE LOGIN ----------------
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -113,11 +107,9 @@ export default function App() {
     });
   };
 
-  // 🔹 Logout (non-blocking)
+  // ---------------- LOGOUT ----------------
   const handleLogout = () => {
-    supabase.auth.signOut().catch((err) =>
-      console.error("SignOut error:", err)
-    );
+    supabase.auth.signOut().catch(console.error);
 
     setUser(null);
     setEmployeeProfile(null);
@@ -127,7 +119,7 @@ export default function App() {
     setSelectedRequest(null);
   };
 
-  // 🔹 Not Logged In
+  // ---------------- LOGIN PAGE ----------------
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-100">
@@ -147,69 +139,11 @@ export default function App() {
     );
   }
 
-  // 🔹 Create / Edit
-  if (view === "create") {
-    return (
-      <RequestFormPage
-        mode={selectedRequest ? "edit" : "create"}
-        requestToEdit={selectedRequest || undefined}
-        currentUser={user}
-        onBack={() => {
-          setView("dashboard");
-          setSelectedRequest(null);
-        }}
-        onSuccess={async () => {
-          await fetchAllData(user.email);
-          setView("dashboard");
-          setSelectedRequest(null);
-        }}
-      />
-    );
-  }
-
-  // 🔹 View Mode (NEW)
-  if (view === "view" && selectedRequest) {
-    return (
-      <RequestFormPage
-        mode="view"
-        requestToEdit={selectedRequest}
-        currentUser={user}
-        onBack={() => {
-          setView("dashboard");
-          setSelectedRequest(null);
-        }}
-        onSuccess={async () => {
-          await fetchAllData(user.email);
-          setView("dashboard");
-          setSelectedRequest(null);
-        }}
-      />
-    );
-  }
-
-  // 🔹 Approval
-  if (view === "approval" && selectedRequest) {
-    return (
-      <RequestFormPage
-        mode="approval"
-        requestToEdit={selectedRequest}
-        currentUser={user}
-        onBack={() => {
-          setView("dashboard");
-          setSelectedRequest(null);
-        }}
-        onSuccess={async () => {
-          await fetchAllData(user.email);
-          setView("dashboard");
-          setSelectedRequest(null);
-        }}
-      />
-    );
-  }
-
-  // 🔹 Dashboard
+  // ---------------- MAIN LAYOUT ----------------
   return (
     <div className="min-h-screen bg-gray-100">
+
+      {/* HEADER ALWAYS VISIBLE */}
       <header className="bg-white shadow-md px-6 py-4 flex justify-between items-center">
         <h1 className="text-xl font-semibold">
           Request Management System
@@ -230,52 +164,80 @@ export default function App() {
         </div>
       </header>
 
-      <main className="p-8 space-y-12">
-        {/* My Requests */}
-        <section>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold">
-              My Requests
-            </h2>
+      {/* CONTENT AREA */}
+      <main className="p-8">
 
-            <button
-              onClick={() => {
-                setSelectedRequest(null);
-                setView("create");
-              }}
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
-            >
-              + New Request
-            </button>
+        {view === "dashboard" && (
+          <div className="space-y-12">
+
+            {/* MY REQUESTS */}
+            <section>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-lg font-semibold">
+                  My Requests
+                </h2>
+
+                <button
+                  onClick={() => {
+                    setSelectedRequest(null);
+                    setView("create");
+                  }}
+                  className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
+                >
+                  + New Request
+                </button>
+              </div>
+
+              <RequestsTable
+                requests={myRequests}
+                onEdit={(req) => {
+                  setSelectedRequest(req);
+                  setView("create");
+                }}
+                onView={(req) => {
+                  setSelectedRequest(req);
+                  setView("view");
+                }}
+              />
+            </section>
+
+            {/* MY APPROVALS */}
+            <section>
+              <h2 className="text-lg font-semibold mb-6">
+                My Approvals
+              </h2>
+
+              <RequestsTable
+                requests={myApprovals}
+                onView={(req) => {
+                  setSelectedRequest(req);
+                  setView("approval");
+                }}
+              />
+            </section>
+
           </div>
+        )}
 
-          <RequestsTable
-            requests={myRequests}
-            onEdit={(req) => {
-              setSelectedRequest(req);
-              setView("create");
+        {(view === "create" ||
+          view === "approval" ||
+          view === "view") && (
+          <RequestFormPage
+            mode={view}
+            requestToEdit={selectedRequest || undefined}
+            currentUser={user}
+            onBack={() => {
+              setView("dashboard");
+              setSelectedRequest(null);
             }}
-            onView={(req) => {
-              setSelectedRequest(req);
-              setView("view");
-            }}
-          />
-        </section>
-
-        {/* My Approvals */}
-        <section>
-          <h2 className="text-lg font-semibold mb-6">
-            My Approvals
-          </h2>
-
-          <RequestsTable
-            requests={myApprovals}
-            onView={(req) => {
-              setSelectedRequest(req);
-              setView("approval");
+            onSuccess={async () => {
+              await fetchAllData(user.email);
+              setView("dashboard");
+              setSelectedRequest(null);
             }}
           />
-        </section>
+        )}
+
       </main>
     </div>
   );
