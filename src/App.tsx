@@ -34,6 +34,9 @@ export default function App() {
   const [selectedRequest, setSelectedRequest] =
     useState<Request | null>(null);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   // ---------------- FETCH EMPLOYEE PROFILE ----------------
   const fetchEmployeeProfile = async (email: string) => {
     const { data } = await supabase
@@ -47,23 +50,63 @@ export default function App() {
 
   // ---------------- FETCH REQUESTS ----------------
   const fetchAllData = async (email: string) => {
-    const { data: requestsData } = await supabase
-      .from("requests")
-      .select("*")
-      .eq("created_by", email)
-      .order("created_at", { ascending: false });
+    try {
+      setIsRefreshing(true);
 
-    setMyRequests(requestsData || []);
+      const { data: requestsData } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("created_by", email)
+        .order("created_at", { ascending: false });
 
-    const { data: approvalsData } = await supabase
-      .from("requests")
-      .select("*")
-      .eq("current_approver", email)
-      .eq("status", "PENDING")
-      .order("created_at", { ascending: false });
+      setMyRequests(requestsData || []);
 
-    setMyApprovals(approvalsData || []);
+      const { data: approvalsData } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("current_approver", email)
+        .eq("status", "PENDING")
+        .order("created_at", { ascending: false });
+
+      setMyApprovals(approvalsData || []);
+
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("Failed to refresh data", err);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
+
+  // ---------------- INITIAL SESSION CHECK ----------------
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+
+      if (data.session?.user?.email) {
+        const email = data.session.user.email;
+
+        const normalizedUser: NormalizedUser = {
+          email,
+          name:
+            data.session.user.user_metadata?.full_name ??
+            data.session.user.user_metadata?.name ??
+            email,
+          avatar:
+            data.session.user.user_metadata?.avatar_url ??
+            data.session.user.user_metadata?.picture ??
+            null,
+        };
+
+        setUser(normalizedUser);
+
+        await fetchEmployeeProfile(email);
+        await fetchAllData(email);
+      }
+    };
+
+    checkSession();
+  }, []);
 
   // ---------------- AUTH LISTENER ----------------
   useEffect(() => {
@@ -88,6 +131,14 @@ export default function App() {
 
           await fetchEmployeeProfile(email);
           await fetchAllData(email);
+        } else {
+          setUser(null);
+          setEmployeeProfile(null);
+          setMyRequests([]);
+          setMyApprovals([]);
+          setView("dashboard");
+          setSelectedRequest(null);
+          setLastUpdated(null);
         }
       }
     );
@@ -96,6 +147,20 @@ export default function App() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  // ---------------- AUTO REFRESH (30s) ----------------
+  useEffect(() => {
+    if (!user?.email) return;
+    if (view !== "dashboard") return;
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchAllData(user.email);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.email, view]);
 
   // ---------------- GOOGLE LOGIN ----------------
   const handleGoogleLogin = async () => {
@@ -108,8 +173,8 @@ export default function App() {
   };
 
   // ---------------- LOGOUT ----------------
-  const handleLogout = () => {
-    supabase.auth.signOut().catch(console.error);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
 
     setUser(null);
     setEmployeeProfile(null);
@@ -117,6 +182,7 @@ export default function App() {
     setMyApprovals([]);
     setView("dashboard");
     setSelectedRequest(null);
+    setLastUpdated(null);
   };
 
   // ---------------- LOGIN PAGE ----------------
@@ -142,54 +208,77 @@ export default function App() {
   // ---------------- MAIN LAYOUT ----------------
   return (
     <div className="min-h-screen bg-gray-100">
-
-      {/* HEADER ALWAYS VISIBLE */}
       <header className="bg-white shadow-md px-8 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-5">
+          <img
+            src="/cmr-logo.png"
+            alt="CMR University"
+            className="h-14 w-auto object-contain"
+          />
+          <div>
+            <div className="text-2xl font-semibold">
+              CMR University
+            </div>
+            <div className="text-sm text-gray-500">
+              Request Management System
+            </div>
+          </div>
+        </div>
 
-  {/* LEFT: Logo + University Name */}
-  <div className="flex items-center gap-5">
+        <div className="flex items-center gap-5">
+          <UserProfileBadge
+            user={user}
+            employeeProfile={employeeProfile}
+          />
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-5 py-2 rounded-xl hover:bg-red-600 transition"
+          >
+            Logout
+          </button>
+        </div>
+      </header>
 
-    <img
-      src="/cmr-logo.png"
-      alt="CMR University"
-      className="h-14 w-auto object-contain"
-    />
-
-    <div className="flex flex-col justify-center">
-      <span className="text-2xl font-semibold text-gray-800 leading-tight">
-        CMR University
-      </span>
-      <span className="text-sm text-gray-500 leading-tight tracking-wide">
-        Request Management System
-      </span>
-    </div>
-
-  </div>
-
-  {/* RIGHT: User + Logout */}
-  <div className="flex items-center gap-5">
-    <UserProfileBadge
-      user={user}
-      employeeProfile={employeeProfile}
-    />
-
-    <button
-      onClick={handleLogout}
-      className="bg-red-500 text-white px-5 py-2 rounded-xl hover:bg-red-600 transition font-medium"
-    >
-      Logout
-    </button>
-  </div>
-
-</header>
-
-      {/* CONTENT AREA */}
       <main className="p-8">
-
         {view === "dashboard" && (
           <div className="space-y-12">
 
-            {/* MY REQUESTS */}
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-500">
+                {lastUpdated &&
+                  `Last Updated: ${lastUpdated.toLocaleTimeString()}`}
+              </div>
+
+              <button
+                onClick={() => user && fetchAllData(user.email)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
+              >
+                {isRefreshing && (
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="white"
+                      strokeWidth="4"
+                      opacity="0.25"
+                    />
+                    <path
+                      fill="white"
+                      opacity="0.75"
+                      d="M4 12a8 8 0 018-8v8z"
+                    />
+                  </svg>
+                )}
+                Refresh
+              </button>
+            </div>
+
+            {/* Tables remain unchanged */}
             <section>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold">
@@ -220,7 +309,6 @@ export default function App() {
               />
             </section>
 
-            {/* MY APPROVALS */}
             <section>
               <h2 className="text-lg font-semibold mb-6">
                 My Approvals
@@ -250,13 +338,14 @@ export default function App() {
               setSelectedRequest(null);
             }}
             onSuccess={async () => {
-              await fetchAllData(user.email);
+              if (user?.email) {
+                await fetchAllData(user.email);
+              }
               setView("dashboard");
               setSelectedRequest(null);
             }}
           />
         )}
-
       </main>
     </div>
   );

@@ -64,9 +64,6 @@ export default function RequestFormPage({
   const canDeleteExisting =
     isOriginator && isEditableState;
 
-  // =====================================================
-  // LOAD EXISTING REQUEST
-  // =====================================================
   useEffect(() => {
     if (!requestToEdit) return;
 
@@ -83,9 +80,6 @@ export default function RequestFormPage({
   const isImageFile = (fileName: string) =>
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
-  // =====================================================
-  // FILE HANDLING
-  // =====================================================
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
@@ -106,9 +100,6 @@ export default function RequestFormPage({
     fileInputRef.current?.click();
   };
 
-  // =====================================================
-  // SAVE / SUBMIT
-  // =====================================================
   const handleAction = async (submit: boolean) => {
     try {
       setLoading(submit ? "submit" : "draft");
