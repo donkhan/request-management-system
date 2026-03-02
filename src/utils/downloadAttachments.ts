@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 interface Attachment {
   file_name: string;
@@ -20,6 +20,7 @@ export const downloadAttachmentsAsZip = async (
   const zip = new JSZip();
 
   for (const doc of attachments) {
+    const supabase = getSupabase();
     const { data, error } = await supabase.storage
       .from(bucketName)
       .createSignedUrl(doc.file_path, 60);

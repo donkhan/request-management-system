@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 interface Props {
   requestId: string;
@@ -27,7 +27,7 @@ export default function AuditLog({ requestId }: Props) {
   const fetchLogs = async () => {
     setLoading(true);
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from("request_audit_logs")
       .select("*")
       .eq("request_id", requestId)

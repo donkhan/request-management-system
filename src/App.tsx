@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 import RequestsTable from "./components/RequestsTable";
 import RequestFormPage from "./components/RequestFormPage";
 import UserProfileBadge from "./components/UserProfileBadge";
@@ -86,14 +86,14 @@ export default function App() {
     let isMounted = true;
 
     const initAuth = async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data } = await getSupabase().auth.getSession();
       if (!isMounted) return;
       if (data.session?.user) {
         await handleUserLogin(data.session.user);
       }
     };
     initAuth();
-    const { data: listener } = supabase.auth.onAuthStateChange(
+    const { data: listener } = getSupabase().auth.onAuthStateChange(
       async (_event, session) => {
         if (!isMounted) return;
 

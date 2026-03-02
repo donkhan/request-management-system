@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 interface Props {
   documents: any[];
@@ -14,7 +14,7 @@ export default function ImageSlideshowModal({
   if (previewIndex === null) return null;
 
   const getPublicUrl = (path: string) => {
-    const { data } = supabase.storage
+    const { data } = getSupabase().storage
       .from("request-documents")
       .getPublicUrl(path);
 

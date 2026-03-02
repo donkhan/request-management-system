@@ -1,7 +1,7 @@
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 export async function loginWithGoogle() {
-  await supabase.auth.signInWithOAuth({
+  await getSupabase().auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: window.location.origin,
@@ -10,6 +10,6 @@ export async function loginWithGoogle() {
 }
 
 export async function logout() {
-  await supabase.auth.signOut();
+  await getSupabase().auth.signOut();
   window.location.reload();
 }

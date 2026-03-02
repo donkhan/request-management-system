@@ -1,6 +1,7 @@
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 export async function fetchEmployeeProfile(email: string) {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("employees")
     .select("*")
@@ -13,6 +14,7 @@ export async function fetchEmployeeProfile(email: string) {
 }
 
 export async function fetchRequestDocuments(requestId: string) {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("documents")
     .select("*")
@@ -56,7 +58,7 @@ export async function performApprovalAction({
       current_approver: createdBy,
     };
   }
-
+  const supabase = getSupabase();
   if (action === "FORWARDED") {
     const { data: profile, error } = await supabase
       .from("employees")
@@ -109,7 +111,7 @@ export async function createRequest({
 }) {
   let status = "DRAFT";
   let approver: string | null = null;
-
+  const supabase = getSupabase();
   if (submit) {
     const { data: employee, error } = await supabase
       .from("employees")
@@ -172,7 +174,7 @@ export async function uploadDocuments(
       .replace(/[^a-zA-Z0-9._-]/g, "");
 
     const filePath = `${requestId}/${Date.now()}-${safeName}`;
-
+    const supabase = getSupabase();
     const { error: uploadError } = await supabase.storage
       .from("request-documents")
       .upload(filePath, file);
@@ -185,7 +187,7 @@ export async function uploadDocuments(
       file_path: filePath,
     });
   }
-
+  const supabase = getSupabase();
   const { error } = await supabase
     .from("documents")
     .insert(docsToInsert);
@@ -206,6 +208,7 @@ export async function saveRequestWithDocuments({
   deletedDocIds,
   submit,
 }: any) {
+  const supabase = getSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -298,12 +301,14 @@ export async function saveRequestWithDocuments({
 
 
 export async function getDashboardData(email: string) {
+  alert("S1");
+  const supabase = getSupabase();
   const { data: requestsData, error: reqError } = await supabase
     .from("requests")
     .select("*")
     .eq("created_by", email)
     .order("created_at", { ascending: false });
-
+  alert("S2");
   if (reqError) throw reqError;
 
   const { data: approvalsData, error: apprError } = await supabase
