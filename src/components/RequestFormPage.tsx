@@ -1,4 +1,6 @@
 import { useEffect, useState, useRef } from "react";
+import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
+
 import {
   saveRequestWithDocuments,
   performApprovalAction,
@@ -39,6 +41,7 @@ export default function RequestFormPage({
   const [deletedDocIds, setDeletedDocIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<"draft" | "submit" | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +79,24 @@ export default function RequestFormPage({
         console.error("Failed to fetch documents", err)
       );
   }, [requestToEdit]);
+
+  const handleDownloadAll = async () => {
+  if (!requestToEdit) return;
+
+  try {
+    setIsDownloading(true);
+
+    await downloadAttachmentsAsZip(
+      requestToEdit.id,
+      title,
+      existingDocs
+    );
+  } catch (err: any) {
+    alert(err.message || "Download failed");
+  } finally {
+    setIsDownloading(false);
+  }
+};
 
   const isImageFile = (fileName: string) =>
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
@@ -169,7 +190,19 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-
+        {requestToEdit && existingDocs.length > 0 && (
+  <div className="flex justify-end mb-6">
+    <button
+      onClick={handleDownloadAll}
+      disabled={isDownloading}
+      className="px-5 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+    >
+      {isDownloading
+        ? "Preparing Download..."
+        : "Download All Attachments"}
+    </button>
+  </div>
+)}
         <h1 className="text-3xl font-bold mb-8 text-gray-800">
           {isApprovalMode
             ? "Approval View"

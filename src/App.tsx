@@ -149,6 +149,7 @@ export default function App() {
   }, []);
 
   // ---------------- AUTO REFRESH (30s) ----------------
+  /*
   useEffect(() => {
     if (!user?.email) return;
     if (view !== "dashboard") return;
@@ -161,6 +162,7 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [user?.email, view]);
+  */
 
   // ---------------- GOOGLE LOGIN ----------------
   const handleGoogleLogin = async () => {
