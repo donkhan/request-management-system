@@ -117,6 +117,34 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible") {
+      console.warn("Tab resumed. Resetting Supabase state for demo.");
+
+      // Clear Supabase-related storage only
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith("sb-")) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      sessionStorage.clear();
+
+      indexedDB.deleteDatabase("supabase.auth.token");
+
+      // Force full reload (releases lock)
+      window.location.reload();
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibility);
+
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibility);
+  };
+}, []);
+
   const handleGoogleLogin = async () => {
     await loginWithGoogle();
   };

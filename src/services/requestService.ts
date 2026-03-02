@@ -301,14 +301,12 @@ export async function saveRequestWithDocuments({
 
 
 export async function getDashboardData(email: string) {
-  alert("S1");
   const supabase = getSupabase();
   const { data: requestsData, error: reqError } = await supabase
     .from("requests")
     .select("*")
     .eq("created_by", email)
     .order("created_at", { ascending: false });
-  alert("S2");
   if (reqError) throw reqError;
 
   const { data: approvalsData, error: apprError } = await supabase
