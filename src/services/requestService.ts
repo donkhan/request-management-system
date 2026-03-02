@@ -1,5 +1,17 @@
 import { supabase } from "../supabase";
 
+export async function fetchEmployeeProfile(email: string) {
+  const { data, error } = await supabase
+    .from("employees")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  if (error) throw error;
+
+  return data || null;
+}
+
 export async function fetchRequestDocuments(requestId: string) {
   const { data, error } = await supabase
     .from("documents")
@@ -282,4 +294,29 @@ export async function saveRequestWithDocuments({
 
     return request;
   }
+}
+
+
+export async function getDashboardData(email: string) {
+  const { data: requestsData, error: reqError } = await supabase
+    .from("requests")
+    .select("*")
+    .eq("created_by", email)
+    .order("created_at", { ascending: false });
+
+  if (reqError) throw reqError;
+
+  const { data: approvalsData, error: apprError } = await supabase
+    .from("requests")
+    .select("*")
+    .eq("current_approver", email)
+    .eq("status", "PENDING")
+    .order("created_at", { ascending: false });
+
+  if (apprError) throw apprError;
+
+  return {
+    myRequests: requestsData || [],
+    myApprovals: approvalsData || [],
+  };
 }

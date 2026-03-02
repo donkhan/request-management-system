@@ -3,6 +3,12 @@ import { supabase } from "./supabase";
 import RequestsTable from "./components/RequestsTable";
 import RequestFormPage from "./components/RequestFormPage";
 import UserProfileBadge from "./components/UserProfileBadge";
+import { loginWithGoogle, logout } from "./services/authService";
+
+import {
+  fetchEmployeeProfile,
+  getDashboardData,
+} from "./services/requestService";
 
 interface Request {
   id: string;
@@ -37,39 +43,18 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // ---------------- FETCH EMPLOYEE PROFILE ----------------
-  const fetchEmployeeProfile = async (email: string) => {
-    const { data } = await supabase
-      .from("employees")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-    setEmployeeProfile(data || null);
+  const loadEmployeeProfile = async (email: string) => {
+    const profile = await fetchEmployeeProfile(email);
+    setEmployeeProfile(profile);
   };
 
-  // ---------------- FETCH REQUESTS ----------------
   const fetchAllData = async (email: string) => {
     try {
       setIsRefreshing(true);
-
-      const { data: requestsData } = await supabase
-        .from("requests")
-        .select("*")
-        .eq("created_by", email)
-        .order("created_at", { ascending: false });
-
-      setMyRequests(requestsData || []);
-
-      const { data: approvalsData } = await supabase
-        .from("requests")
-        .select("*")
-        .eq("current_approver", email)
-        .eq("status", "PENDING")
-        .order("created_at", { ascending: false });
-
-      setMyApprovals(approvalsData || []);
-
+      const { myRequests, myApprovals } =
+        await getDashboardData(email);
+      setMyRequests(myRequests);
+      setMyApprovals(myApprovals);
       setLastUpdated(new Date());
     } catch (err) {
       console.error("Failed to refresh data", err);
@@ -78,59 +63,42 @@ export default function App() {
     }
   };
 
-  // ---------------- INITIAL SESSION CHECK ----------------
+  const handleUserLogin = async (sessionUser: any) => {
+    const email = sessionUser.email;
+    const normalizedUser: NormalizedUser = {
+      email,
+      name:
+        sessionUser.user_metadata?.full_name ??
+        sessionUser.user_metadata?.name ??
+        email,
+      avatar:
+        sessionUser.user_metadata?.avatar_url ??
+        sessionUser.user_metadata?.picture ??
+        null,
+    };
+    setUser(normalizedUser);
+    await loadEmployeeProfile(email);
+    await fetchAllData(email);
+  };
+
+  // ---------------- AUTH INITIALIZATION ----------------
   useEffect(() => {
-    const checkSession = async () => {
+    let isMounted = true;
+
+    const initAuth = async () => {
       const { data } = await supabase.auth.getSession();
-
-      if (data.session?.user?.email) {
-        const email = data.session.user.email;
-
-        const normalizedUser: NormalizedUser = {
-          email,
-          name:
-            data.session.user.user_metadata?.full_name ??
-            data.session.user.user_metadata?.name ??
-            email,
-          avatar:
-            data.session.user.user_metadata?.avatar_url ??
-            data.session.user.user_metadata?.picture ??
-            null,
-        };
-
-        setUser(normalizedUser);
-
-        await fetchEmployeeProfile(email);
-        await fetchAllData(email);
+      if (!isMounted) return;
+      if (data.session?.user) {
+        await handleUserLogin(data.session.user);
       }
     };
-
-    checkSession();
-  }, []);
-
-  // ---------------- AUTH LISTENER ----------------
-  useEffect(() => {
+    initAuth();
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (session?.user?.email) {
-          const email = session.user.email;
+        if (!isMounted) return;
 
-          const normalizedUser: NormalizedUser = {
-            email,
-            name:
-              session.user.user_metadata?.full_name ??
-              session.user.user_metadata?.name ??
-              email,
-            avatar:
-              session.user.user_metadata?.avatar_url ??
-              session.user.user_metadata?.picture ??
-              null,
-          };
-
-          setUser(normalizedUser);
-
-          await fetchEmployeeProfile(email);
-          await fetchAllData(email);
+        if (session?.user) {
+          await handleUserLogin(session.user);
         } else {
           setUser(null);
           setEmployeeProfile(null);
@@ -144,47 +112,17 @@ export default function App() {
     );
 
     return () => {
+      isMounted = false;
       listener.subscription.unsubscribe();
     };
   }, []);
 
-  // ---------------- AUTO REFRESH (30s) ----------------
-  /*
-  useEffect(() => {
-    if (!user?.email) return;
-    if (view !== "dashboard") return;
-
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") {
-        fetchAllData(user.email);
-      }
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [user?.email, view]);
-  */
-
-  // ---------------- GOOGLE LOGIN ----------------
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+    await loginWithGoogle();
   };
 
-  // ---------------- LOGOUT ----------------
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-
-    setUser(null);
-    setEmployeeProfile(null);
-    setMyRequests([]);
-    setMyApprovals([]);
-    setView("dashboard");
-    setSelectedRequest(null);
-    setLastUpdated(null);
+    await logout();
   };
 
   // ---------------- LOGIN PAGE ----------------
@@ -244,7 +182,6 @@ export default function App() {
       <main className="p-8">
         {view === "dashboard" && (
           <div className="space-y-12">
-
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-500">
                 {lastUpdated &&
@@ -280,7 +217,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Tables remain unchanged */}
             <section>
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold">
@@ -324,7 +260,6 @@ export default function App() {
                 }}
               />
             </section>
-
           </div>
         )}
 
