@@ -188,6 +188,7 @@ export async function performApprovalAction({
   comment: string;
   currentUserEmail: string;
   createdBy: string;
+  department?: string;
 }) {
   await requireComment(comment);
 
@@ -298,6 +299,7 @@ export async function forwardRequestToUser({
   newApproverEmail: string;
   currentUserEmail: string;
   department?: string;
+  comment?: string;
 }) {
   const supabase = getSupabase();
 

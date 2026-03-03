@@ -49,8 +49,7 @@ export default function ForwardModal({
       return;
     }
 
-    let targetEmail = selectedUser;
-
+    let targetEmail: string | null = selectedUser;
     if (mode === "HEAD") {
       targetEmail = await getDepartmentHead(selectedDept);
     }
