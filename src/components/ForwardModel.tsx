@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
-import { getSupabase } from "../supabase";
+import {
+  getAllDepartments,
+  getDepartmentHead,
+} from "../services/departmentService";
+import { getApprovedEmployeesByDepartment } from "../services/employeeService";
 import { forwardRequestToUser } from "../services/requestService";
 
 interface Props {
@@ -19,8 +23,6 @@ export default function ForwardModal({
   onClose,
   onSuccess,
 }: Props) {
-  const supabase = getSupabase();
-
   const [departments, setDepartments] = useState<string[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [selectedDept, setSelectedDept] = useState("");
@@ -28,43 +30,33 @@ export default function ForwardModal({
   const [mode, setMode] = useState<"HEAD" | "USER">("HEAD");
 
   useEffect(() => {
-    supabase
-      .from("department")
-      .select("name")
-      .then(({ data }) => {
-        setDepartments(data?.map((d) => d.name) || []);
-      });
+    getAllDepartments()
+      .then(setDepartments)
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
     if (!selectedDept) return;
 
-    supabase
-      .from("employee")
-      .select("email, name")
-      .eq("department", selectedDept)
-      .eq("status", "APPROVED")
-      .then(({ data }) => setUsers(data || []));
+    getApprovedEmployeesByDepartment(selectedDept)
+      .then(setUsers)
+      .catch(console.error);
   }, [selectedDept]);
 
   const handleForward = async () => {
-    let targetEmail = selectedUser;
     if (!comment?.trim()) {
-  alert("Comment is required");
-  return;
-}
-    if (mode === "HEAD") {
-      const { data } = await supabase
-        .from("department")
-        .select("head_email")
-        .eq("name", selectedDept)
-        .single();
+      alert("Comment is required");
+      return;
+    }
 
-      targetEmail = data?.head_email;
+    let targetEmail = selectedUser;
+
+    if (mode === "HEAD") {
+      targetEmail = await getDepartmentHead(selectedDept);
     }
 
     if (!targetEmail) {
-      alert("Please select valid user");
+      alert("Please select a valid user");
       return;
     }
 
@@ -73,7 +65,7 @@ export default function ForwardModal({
       newApproverEmail: targetEmail,
       currentUserEmail,
       department,
-      comment
+      comment,
     });
 
     onSuccess();
@@ -83,9 +75,9 @@ export default function ForwardModal({
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center">
       <div className="bg-white rounded-2xl p-6 w-[420px] space-y-4">
-
         <h2 className="text-lg font-semibold">Forward Request</h2>
 
+        {/* Department Dropdown */}
         <select
           className="w-full border rounded-lg px-3 py-2"
           value={selectedDept}
@@ -93,30 +85,34 @@ export default function ForwardModal({
         >
           <option value="">Select Department</option>
           {departments.map((d) => (
-            <option key={d}>{d}</option>
+            <option key={d} value={d}>
+              {d}
+            </option>
           ))}
         </select>
 
+        {/* Mode Selection */}
         <div className="flex gap-4">
-          <label>
+          <label className="flex items-center gap-2">
             <input
               type="radio"
               checked={mode === "HEAD"}
               onChange={() => setMode("HEAD")}
-            />{" "}
+            />
             Department Head
           </label>
 
-          <label>
+          <label className="flex items-center gap-2">
             <input
               type="radio"
               checked={mode === "USER"}
               onChange={() => setMode("USER")}
-            />{" "}
+            />
             Specific User
           </label>
         </div>
 
+        {/* User Dropdown */}
         {mode === "USER" && (
           <select
             className="w-full border rounded-lg px-3 py-2"
@@ -132,11 +128,18 @@ export default function ForwardModal({
           </select>
         )}
 
+        {/* Buttons */}
         <div className="flex justify-end gap-3">
-          <button onClick={onClose}>Cancel</button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition"
+          >
+            Cancel
+          </button>
+
           <button
             onClick={handleForward}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg"
+            className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition"
           >
             Forward
           </button>

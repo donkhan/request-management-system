@@ -39,3 +39,20 @@ export async function getDepartmentHead(email: string) {
 
   return dept.head_email;
 }
+
+
+export async function getApprovedEmployeesByDepartment(
+  departmentName: string
+) {
+  const supabase = getSupabase();
+
+  const { data, error } = await supabase
+    .from("employee")
+    .select("email, name")
+    .eq("department", departmentName)
+    .eq("status", "APPROVED");
+
+  if (error) throw error;
+
+  return data || [];
+}
