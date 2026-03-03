@@ -29,19 +29,19 @@ export default function RequestsTable({
         <thead className="bg-gray-100">
           <tr>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-              Title
+              TITLE
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-              Origin
+              ORIGIN
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-              Current Approver
+              CURRENT APPROVER
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-              Status
+              STATUS
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
-              Action
+              ACTION
             </th>
           </tr>
         </thead>

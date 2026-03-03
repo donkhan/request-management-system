@@ -1,4 +1,6 @@
 import { getSupabase } from "../supabase";
+import { getDepartmentHead } from "./employeeService";
+import { deleteDocuments, uploadDocuments } from "./documentService";
 
 /* =====================================================
    SHARED
@@ -24,51 +26,11 @@ async function requireComment(comment: string) {
   }
 }
 
-export async function fetchEmployeeProfile(email: string) {
-  const { data, error } = await db()
-    .from("employee")
-    .select("*")
-    .eq("email", email)
-    .single();
-
-  if (error) throw error;
-
-  return data ?? null;
-}
-
-async function getDepartmentHead(email: string) {
-  const supabase = db();
-
-  const { data: emp, error: empError } = await supabase
-    .from("employee")
-    .select("department")
-    .eq("email", email)
-    .single();
-
-  if (empError || !emp?.department) {
-    throw new Error("Employee department not found");
-  }
-
-  const { data: dept, error: deptError } = await supabase
-    .from("department")
-    .select("head_email")
-    .eq("name", emp.department)
-    .single();
-
-  if (deptError || !dept?.head_email) {
-    throw new Error("Department head not found");
-  }
-
-  return dept.head_email;
-}
-
 async function resolveWorkflow(userEmail: string, submit: boolean) {
   if (!submit) {
     return { status: "DRAFT", approver: null };
   }
-
   const approver = await getDepartmentHead(userEmail);
-
   return {
     status: "PENDING",
     approver,
@@ -125,85 +87,6 @@ async function updateRequest(
   return data;
 }
 
-/* =====================================================
-   DOCUMENTS
-===================================================== */
-
-export async function fetchRequestDocuments(requestId: string) {
-  const { data, error } = await db()
-    .from("document")
-    .select("*")
-    .eq("request_id", requestId);
-
-  if (error) throw error;
-  return data ?? [];
-}
-
-async function deleteDocuments(
-  deletedDocIds: string[],
-  existingDocs: any[]
-) {
-  if (!deletedDocIds?.length) return;
-
-  const supabase = db();
-
-  const docsToDelete = existingDocs.filter((doc) =>
-    deletedDocIds.includes(doc.id)
-  );
-
-  const paths = docsToDelete.map((doc) => doc.file_path);
-
-  if (paths.length) {
-    await supabase.storage
-      .from("request-documents")
-      .remove(paths);
-  }
-
-  await supabase
-    .from("document")
-    .delete()
-    .in("id", deletedDocIds);
-}
-
-export async function uploadDocuments(
-  files: File[],
-  requestId: string
-) {
-  if (!files?.length) return;
-
-  const supabase = db();
-  const docsToInsert: any[] = [];
-
-  for (const file of files) {
-    const safeName = file.name
-      .replace(/\s+/g, "_")
-      .replace(/[^a-zA-Z0-9._-]/g, "");
-
-    const filePath = `${requestId}/${Date.now()}-${safeName}`;
-
-    const { error } = await supabase.storage
-      .from("request-documents")
-      .upload(filePath, file);
-
-    if (error) throw error;
-
-    docsToInsert.push({
-      request_id: requestId,
-      file_name: file.name,
-      file_path: filePath,
-    });
-  }
-
-  const { error } = await supabase
-    .from("document")
-    .insert(docsToInsert);
-
-  if (error) throw error;
-}
-
-/* =====================================================
-   SAVE REQUEST (CREATE OR UPDATE)
-===================================================== */
 
 export async function saveRequestWithDocuments({
   isEditMode,
@@ -239,12 +122,19 @@ export async function saveRequestWithDocuments({
       );
 
   if (submit) {
+    const truncatedDescription =
+      description.length > 500
+      ? description.substring(0, 500) + "..."
+      : description;
+
+    const auditComment = `Title: ${title}
+    Description: ${truncatedDescription}`;
     await db().from("audit_log").insert({
       request_id: request.id,
       action: "SUBMITTED",
       acted_by: userEmail,
       acted_to: approver,
-      comment: "Request submitted",
+      comment: auditComment,
     });
   }
 
@@ -364,4 +254,32 @@ export async function getDashboardData(email: string) {
     myRequests: myRequests ?? [],
     myApprovals: myApprovals ?? [],
   };
+}
+
+
+export async function getMyDecisionHistory(email: string) {
+  const supabase = db();
+
+  const { data, error } = await supabase
+    .from("audit_log")
+    .select(`
+      id,
+      action,
+      comment,
+      created_at,
+      request_id,
+      request:request_id (
+        id,
+        title,
+        created_by,
+        status
+      )
+    `)
+    .eq("acted_by", email)
+    .in("action", ["APPROVED", "REJECTED"])
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  return data ?? [];
 }

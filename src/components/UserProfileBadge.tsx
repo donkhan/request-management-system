@@ -38,7 +38,7 @@ export default function UserProfileBadge({
         </span>
 
         <span className="text-gray-400 text-xs leading-tight">
-          Dept: {employeeProfile?.dept_id || "-"}
+          Dept: {employeeProfile?.department || "-"}
         </span>
       </div>
     </div>

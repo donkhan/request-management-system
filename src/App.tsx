@@ -4,21 +4,10 @@ import RequestsTable from "./components/RequestsTable";
 import RequestFormPage from "./components/RequestFormPage";
 import UserProfileBadge from "./components/UserProfileBadge";
 import { loginWithGoogle, logout } from "./services/authService";
-
-import {
-  fetchEmployeeProfile,
-  getDashboardData,
-} from "./services/requestService";
-
-interface Request {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  created_at: string;
-  created_by?: string | null;
-  current_approver?: string | null;
-}
+import { fetchEmployeeProfile } from "./services/employeeService";
+import { getDashboardData,getMyDecisionHistory } from "./services/requestService";
+import DecisionHistoryTable  from "./components/DecisionHistoryTable";
+import type { Request } from "./types";
 
 interface NormalizedUser {
   email: string;
@@ -32,6 +21,7 @@ export default function App() {
 
   const [myRequests, setMyRequests] = useState<Request[]>([]);
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
+  const [myDecisions, setMyDecisions] = useState<any[]>([]);
 
   const [view, setView] = useState<
     "dashboard" | "create" | "approval" | "view"
@@ -49,19 +39,26 @@ export default function App() {
   };
 
   const fetchAllData = async (email: string) => {
-    try {
-      setIsRefreshing(true);
-      const { myRequests, myApprovals } =
-        await getDashboardData(email);
-      setMyRequests(myRequests);
-      setMyApprovals(myApprovals);
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error("Failed to refresh data", err);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
+  try {
+    setIsRefreshing(true);
+
+    const { myRequests, myApprovals } =
+      await getDashboardData(email);
+
+    const decisionHistory =
+      await getMyDecisionHistory(email);
+
+    setMyRequests(myRequests);
+    setMyApprovals(myApprovals);
+    setMyDecisions(decisionHistory);
+
+    setLastUpdated(new Date());
+  } catch (err) {
+    console.error("Failed to refresh data", err);
+  } finally {
+    setIsRefreshing(false);
+  }
+};
 
   const handleUserLogin = async (sessionUser: any) => {
     const email = sessionUser.email;
@@ -283,6 +280,21 @@ export default function App() {
                 }}
               />
             </section>
+
+            <section>
+  <h2 className="text-lg font-semibold mb-6">
+    My Decision History
+  </h2>
+
+  <DecisionHistoryTable
+    decisions={myDecisions}
+    onView={(req) => {
+      setSelectedRequest(req);
+      setView("view");
+    }}
+  />
+</section>    
+
           </div>
         )}
 

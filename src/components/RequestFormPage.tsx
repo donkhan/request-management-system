@@ -3,9 +3,10 @@ import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
 
 import {
   saveRequestWithDocuments,
-  performApprovalAction,
-  fetchRequestDocuments,
+  performApprovalAction
 } from "../services/requestService";
+
+import { fetchRequestDocuments } from "../services/documentService";
 import ImageSlideshowModal from "../components/ImageSlideshowModal";
 import AuditLog from "../components/AuditLog";
 
