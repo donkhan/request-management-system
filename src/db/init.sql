@@ -1,94 +1,65 @@
--- =========================================
--- DROP TABLES (Dependency Order)
--- =========================================
-drop table if exists requests;
-drop table if exists employees;
-drop table if exists departments;
 
--- =========================================
--- DEPARTMENTS
--- =========================================
-create table departments (
-  id uuid primary key default gen_random_uuid(),
-  name text not null unique
+CREATE TABLE department (
+  name text NOT NULL UNIQUE,
+  head_email text
+);
+insert into department (name,head_email)
+values 
+('SSCS','routetokamil@gmail.com'),
+('SOM','rajat.kera@gmail.com'),
+('DEV','e.a@gmail.com'),
+('VC-OFFICE','23f3004493@ds.study.iitm.ac.in');
+
+CREATE TABLE employee (
+  email text PRIMARY KEY NOT NULL,
+  name text NOT NULL,
+  role text NOT NULL DEFAULT 'EMPLOYEE',
+  department text NOT NULL REFERENCES department(name),
+  status text NOT NULL DEFAULT 'PENDING',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT employee_status_check
+    CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED'))
 );
 
--- =========================================
--- EMPLOYEES
--- =========================================
-create table employees (
-  id uuid primary key default gen_random_uuid(),
-  email text primary key not null unique,
-  name text not null,
-  role text not null,
-  dept_id uuid not null references departments(id),
-  reports_to uuid references employees(id)
-);
+INSERT INTO employee (email, name, role, department,  status)
+VALUES
+('provc.praveen@cmr.edu.in',  'Praveen',  'PROVC', 'VC-OFFICE',  'APPROVED'),
+('ashokkumar.t@cmr.edu.in',   'Ashok Kumar', 'DIRECTOR', 'SSCS',  'APPROVED'),
+('kamil.k@cmr.edu.in',        'Kamil Khan A', 'FACULTY', 'SSCS',  'APPROVED'),
+('routetokamil@gmail.com',  'Kamil', 'DIRECTOR', 'VC-OFFICE',  'APPROVED'),
+('23f3004493@ds.study.iitm.ac.in',  'Student User', 'PROVC', 'VC-OFFICE', 'APPROVED');
 
--- =========================================
--- REQUESTS
--- =========================================
-create table requests (
+
+create table request (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
-  created_by uuid not null references employees(id),
-  current_approver uuid not null references employees(id),
+  created_by text not null references employee(email),
+  current_approver text  references employee(email),
   status text not null default 'Pending',
   created_at timestamp with time zone default now()
 );
 
-create table documents (
+create table document (
   id uuid primary key default gen_random_uuid(),
-  request_id uuid not null references requests(id) on delete cascade,
+  request_id uuid not null references request(id) on delete cascade,
   file_name text not null,
   file_path text not null,
   uploaded_at timestamp with time zone default now()
 );
 
--- =========================================
--- INSERT DEPARTMENTS
--- =========================================
-insert into departments (name)
-values 
-('SSCS'),
-('SOM'),
-('VC-OFFICE');
 
-insert into employees (email, role, dept_id,reports_to)
-values
-('provc.praveen@cmr.edu.in',  'ProVC', 'VC-OFFICE',null),
-('ashokkumar.t@cmr.edu.in',  'Director','SSCS','provc.praveen@cmr.edu.in'),
-('kamil.k@cmr.edu.in',  'Faculty','SSCS','ashokkumar.t@cmr.edu.in')
-;
-
-
-insert into employees (email, role, dept_id,reports_to)
-values
-('routetokamil@gmail.com',  'DIRECTOR', 'SSCS','provc.praveen@cmr.edu.in');
-insert into employees (email, role, dept_id,reports_to)
-values
-('23f3004493@ds.study.iitm.ac.in',  'PROVC', 'VC-OFFICE',null);
-
-update employees set reports_to = 'ashokkumar.t@cmr.edu.in' where email = 'kamil.k@cmr.edu.in';
-
-
-
-
-create policy "Allow authenticated uploads"
-on storage.objects
-for insert
-to authenticated
-with check (bucket_id = 'request-documents');
-
-
-create policy "Allow authenticated read"
-on storage.objects
-for select
-to authenticated
-using (bucket_id = 'request-documents');
-
-CREATE POLICY "Allow select for all"
-ON request_audit_logs
-FOR SELECT
-USING (true);
+create table audit_log (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references request(id) on delete cascade,
+  action text not null, 
+  -- SUBMITTED
+  -- APPROVED
+  -- REJECTED
+  -- REJECTED_WITH_EDIT
+  -- FORWARDED
+  acted_by text not null,        -- email of actor
+  acted_to text,                 -- next approver (nullable)
+  comment text not null,
+  created_at timestamp with time zone default now()
+);

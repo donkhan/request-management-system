@@ -1,28 +1,290 @@
 import { getSupabase } from "../supabase";
 
+/* =====================================================
+   SHARED
+===================================================== */
+
+function db() {
+  return getSupabase();
+}
+
+async function getCurrentUserEmail(): Promise<string> {
+  const {
+    data: { user },
+  } = await db().auth.getUser();
+
+  if (!user?.email) throw new Error("User not authenticated");
+
+  return user.email;
+}
+
+async function requireComment(comment: string) {
+  if (!comment.trim()) {
+    throw new Error("Comment is mandatory.");
+  }
+}
+
 export async function fetchEmployeeProfile(email: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("employees")
+  const { data, error } = await db()
+    .from("employee")
     .select("*")
     .eq("email", email)
     .single();
 
   if (error) throw error;
 
-  return data || null;
+  return data ?? null;
 }
 
+async function getDepartmentHead(email: string) {
+  const supabase = db();
+
+  const { data: emp, error: empError } = await supabase
+    .from("employee")
+    .select("department")
+    .eq("email", email)
+    .single();
+
+  if (empError || !emp?.department) {
+    throw new Error("Employee department not found");
+  }
+
+  const { data: dept, error: deptError } = await supabase
+    .from("department")
+    .select("head_email")
+    .eq("name", emp.department)
+    .single();
+
+  if (deptError || !dept?.head_email) {
+    throw new Error("Department head not found");
+  }
+
+  return dept.head_email;
+}
+
+async function resolveWorkflow(userEmail: string, submit: boolean) {
+  if (!submit) {
+    return { status: "DRAFT", approver: null };
+  }
+
+  const approver = await getDepartmentHead(userEmail);
+
+  return {
+    status: "PENDING",
+    approver,
+  };
+}
+
+/* =====================================================
+   REQUEST CRUD
+===================================================== */
+
+async function createRequest(
+  title: string,
+  description: string,
+  userEmail: string,
+  status: string,
+  approver: string | null
+) {
+  const { data, error } = await db()
+    .from("request")
+    .insert({
+      title,
+      description,
+      created_by: userEmail,
+      status,
+      current_approver: approver,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+async function updateRequest(
+  requestId: string,
+  title: string,
+  description: string,
+  status: string,
+  approver: string | null
+) {
+  const { data, error } = await db()
+    .from("request")
+    .update({
+      title,
+      description,
+      status,
+      current_approver: approver,
+    })
+    .eq("id", requestId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/* =====================================================
+   DOCUMENTS
+===================================================== */
+
 export async function fetchRequestDocuments(requestId: string) {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("documents")
+  const { data, error } = await db()
+    .from("document")
     .select("*")
     .eq("request_id", requestId);
 
   if (error) throw error;
+  return data ?? [];
+}
 
-  return data || [];
+async function deleteDocuments(
+  deletedDocIds: string[],
+  existingDocs: any[]
+) {
+  if (!deletedDocIds?.length) return;
+
+  const supabase = db();
+
+  const docsToDelete = existingDocs.filter((doc) =>
+    deletedDocIds.includes(doc.id)
+  );
+
+  const paths = docsToDelete.map((doc) => doc.file_path);
+
+  if (paths.length) {
+    await supabase.storage
+      .from("request-documents")
+      .remove(paths);
+  }
+
+  await supabase
+    .from("document")
+    .delete()
+    .in("id", deletedDocIds);
+}
+
+export async function uploadDocuments(
+  files: File[],
+  requestId: string
+) {
+  if (!files?.length) return;
+
+  const supabase = db();
+  const docsToInsert: any[] = [];
+
+  for (const file of files) {
+    const safeName = file.name
+      .replace(/\s+/g, "_")
+      .replace(/[^a-zA-Z0-9._-]/g, "");
+
+    const filePath = `${requestId}/${Date.now()}-${safeName}`;
+
+    const { error } = await supabase.storage
+      .from("request-documents")
+      .upload(filePath, file);
+
+    if (error) throw error;
+
+    docsToInsert.push({
+      request_id: requestId,
+      file_name: file.name,
+      file_path: filePath,
+    });
+  }
+
+  const { error } = await supabase
+    .from("document")
+    .insert(docsToInsert);
+
+  if (error) throw error;
+}
+
+/* =====================================================
+   SAVE REQUEST (CREATE OR UPDATE)
+===================================================== */
+
+export async function saveRequestWithDocuments({
+  isEditMode,
+  requestToEdit,
+  title,
+  description,
+  files,
+  existingDocs,
+  deletedDocIds,
+  submit,
+}: any) {
+  const userEmail = await getCurrentUserEmail();
+
+  const { status, approver } = await resolveWorkflow(
+    userEmail,
+    submit
+  );
+
+  const request = isEditMode
+    ? await updateRequest(
+        requestToEdit.id,
+        title,
+        description,
+        status,
+        approver
+      )
+    : await createRequest(
+        title,
+        description,
+        userEmail,
+        status,
+        approver
+      );
+
+  if (submit) {
+    await db().from("audit_log").insert({
+      request_id: request.id,
+      action: "SUBMITTED",
+      acted_by: userEmail,
+      acted_to: approver,
+      comment: "Request submitted",
+    });
+  }
+
+  if (isEditMode) {
+    await deleteDocuments(deletedDocIds, existingDocs);
+  }
+
+  await uploadDocuments(files, request.id);
+
+  return request;
+}
+
+/* =====================================================
+   APPROVAL ACTION
+===================================================== */
+
+function buildApprovalUpdate(
+  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED",
+  createdBy: string,
+  nextApprover?: string | null
+) {
+  switch (action) {
+    case "APPROVED":
+      return { status: "APPROVED", current_approver: null };
+
+    case "REJECTED":
+      return { status: "REJECTED", current_approver: null };
+
+    case "REJECTED_WITH_EDIT":
+      return {
+        status: "REJECTED_WITH_EDIT",
+        current_approver: createdBy,
+      };
+
+    case "FORWARDED":
+      return {
+        status: "PENDING",
+        current_approver: nextApprover ?? null,
+      };
+  }
 }
 
 export async function performApprovalAction({
@@ -38,279 +300,59 @@ export async function performApprovalAction({
   currentUserEmail: string;
   createdBy: string;
 }) {
-  if (!comment.trim()) {
-    throw new Error("Comment is mandatory.");
-  }
+  await requireComment(comment);
 
-  let updateData: any = {};
+  let nextApprover: string | null = null;
 
-  if (action === "APPROVED") {
-    updateData = { status: "APPROVED", current_approver: null };
-  }
-
-  if (action === "REJECTED") {
-    updateData = { status: "REJECTED", current_approver: null };
-  }
-
-  if (action === "REJECTED_WITH_EDIT") {
-    updateData = {
-      status: "REJECTED_WITH_EDIT",
-      current_approver: createdBy,
-    };
-  }
-  const supabase = getSupabase();
   if (action === "FORWARDED") {
-    const { data: profile, error } = await supabase
-      .from("employees")
-      .select("reports_to")
-      .eq("email", currentUserEmail)
-      .single();
+    nextApprover = await getDepartmentHead(currentUserEmail);
 
-    if (error || !profile?.reports_to) {
-      throw new Error("No manager found for forwarding.");
+    if (nextApprover === currentUserEmail) {
+      throw new Error("Cannot forward to yourself.");
     }
-
-    updateData = {
-      status: "PENDING",
-      current_approver: profile.reports_to,
-    };
   }
 
-  // Update request status
-  const { error: updateError } = await supabase
-    .from("requests")
+  const updateData = buildApprovalUpdate(
+    action,
+    createdBy,
+    nextApprover
+  );
+
+  const supabase = db();
+
+  const { error } = await supabase
+    .from("request")
     .update(updateData)
     .eq("id", requestId);
 
-  if (updateError) throw updateError;
-
-  // Insert audit log
-  const { error: auditError } = await supabase
-    .from("request_audit_logs")
-    .insert({
-      request_id: requestId,
-      action,
-      acted_by: currentUserEmail,
-      acted_to: updateData.current_approver,
-      comment,
-    });
-
-  if (auditError) throw auditError;
-}
-
-export async function createRequest({
-  title,
-  description,
-  userEmail,
-  submit,
-}: {
-  title: string;
-  description: string;
-  userEmail: string;
-  submit: boolean;
-}) {
-  let status = "DRAFT";
-  let approver: string | null = null;
-  const supabase = getSupabase();
-  if (submit) {
-    const { data: employee, error } = await supabase
-      .from("employees")
-      .select("reports_to")
-      .eq("email", userEmail)
-      .single();
-
-    if (error) throw error;
-    if (!employee?.reports_to)
-      throw new Error("No approver configured");
-
-    approver = employee.reports_to;
-    status = "PENDING";
-  }
-
-  const { data, error } = await supabase
-    .from("requests")
-    .insert([
-      {
-        title,
-        description,
-        created_by: userEmail,
-        current_approver: approver,
-        status,
-      },
-    ])
-    .select()
-    .single();
-
   if (error) throw error;
 
-  // 🔥 AUDIT LOG FOR SUBMIT
-  if (submit) {
-    await supabase.from("request_audit_logs").insert({
-      request_id: data.id,
-      action: "SUBMITTED",
-      acted_by: userEmail,
-      acted_to: approver,
-      comment: "Request submitted",
-    });
-  }
-
-  return data;
+  await supabase.from("audit_log").insert({
+    request_id: requestId,
+    action,
+    acted_by: currentUserEmail,
+    acted_to: updateData.current_approver,
+    comment,
+  });
 }
 
-// -----------------------------
-// UPLOAD DOCUMENTS
-// -----------------------------
-export async function uploadDocuments(
-  files: File[],
-  requestId: string
-) {
-  if (!files.length) return;
-
-  const docsToInsert = [];
-
-  for (const file of files) {
-    const safeName = file.name
-      .replace(/\s+/g, "_")
-      .replace(/[^a-zA-Z0-9._-]/g, "");
-
-    const filePath = `${requestId}/${Date.now()}-${safeName}`;
-    const supabase = getSupabase();
-    const { error: uploadError } = await supabase.storage
-      .from("request-documents")
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    docsToInsert.push({
-      request_id: requestId,
-      file_name: file.name,
-      file_path: filePath,
-    });
-  }
-  const supabase = getSupabase();
-  const { error } = await supabase
-    .from("documents")
-    .insert(docsToInsert);
-
-  if (error) throw error;
-}
-
-// -----------------------------
-// SAVE / EDIT REQUEST
-// -----------------------------
-export async function saveRequestWithDocuments({
-  isEditMode,
-  requestToEdit,
-  title,
-  description,
-  files,
-  existingDocs,
-  deletedDocIds,
-  submit,
-}: any) {
-  const supabase = getSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user?.email) throw new Error("User not authenticated");
-
-  if (isEditMode) {
-    let status = "DRAFT";
-    let approver: string | null = null;
-
-    if (submit) {
-      const { data: employee } = await supabase
-        .from("employees")
-        .select("reports_to")
-        .eq("email", user.email)
-        .single();
-
-      approver = employee?.reports_to || null;
-      status = "PENDING";
-    }
-
-    // Update request
-    const { data: updatedRequest, error } = await supabase
-      .from("requests")
-      .update({
-        title,
-        description,
-        status,
-        current_approver: approver,
-      })
-      .eq("id", requestToEdit.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // 🔥 AUDIT LOG FOR RESUBMIT
-    if (submit) {
-      await supabase.from("request_audit_logs").insert({
-        request_id: updatedRequest.id,
-        action: "SUBMITTED",
-        acted_by: user.email,
-        acted_to: approver,
-        comment: "Request resubmitted",
-      });
-    }
-
-    // Delete removed docs
-    if (deletedDocIds.length > 0) {
-      const docsToDelete = existingDocs.filter((doc: any) =>
-        deletedDocIds.includes(doc.id)
-      );
-
-      const paths = docsToDelete.map(
-        (doc: any) => doc.file_path
-      );
-
-      if (paths.length) {
-        await supabase.storage
-          .from("request-documents")
-          .remove(paths);
-      }
-
-      await supabase
-        .from("documents")
-        .delete()
-        .in("id", deletedDocIds);
-    }
-
-    if (files.length) {
-      await uploadDocuments(files, requestToEdit.id);
-    }
-
-    return updatedRequest;
-  } else {
-    const request = await createRequest({
-      title,
-      description,
-      userEmail: user.email,
-      submit,
-    });
-
-    if (files.length) {
-      await uploadDocuments(files, request.id);
-    }
-
-    return request;
-  }
-}
-
+/* =====================================================
+   DASHBOARD
+===================================================== */
 
 export async function getDashboardData(email: string) {
-  const supabase = getSupabase();
-  const { data: requestsData, error: reqError } = await supabase
-    .from("requests")
+  const supabase = db();
+
+  const { data: myRequests, error: reqError } = await supabase
+    .from("request")
     .select("*")
     .eq("created_by", email)
     .order("created_at", { ascending: false });
+
   if (reqError) throw reqError;
 
-  const { data: approvalsData, error: apprError } = await supabase
-    .from("requests")
+  const { data: myApprovals, error: apprError } = await supabase
+    .from("request")
     .select("*")
     .eq("current_approver", email)
     .eq("status", "PENDING")
@@ -319,7 +361,7 @@ export async function getDashboardData(email: string) {
   if (apprError) throw apprError;
 
   return {
-    myRequests: requestsData || [],
-    myApprovals: approvalsData || [],
+    myRequests: myRequests ?? [],
+    myApprovals: myApprovals ?? [],
   };
 }

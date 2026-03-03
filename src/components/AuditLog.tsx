@@ -28,10 +28,10 @@ export default function AuditLog({ requestId }: Props) {
     setLoading(true);
 
     const { data, error } = await getSupabase()
-      .from("request_audit_logs")
+      .from("audit_log")
       .select("*")
       .eq("request_id", requestId)
-      .order("occurred_at", { ascending: true });
+      .order("created_at", { ascending: true });
 
     if (error) {
       console.error("Audit fetch error:", error);

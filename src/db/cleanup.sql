@@ -1,3 +1,5 @@
-delete from documents;
-delete from request_audit_logs;
-delete from requests;
+drop table if exists audit_log;
+drop table if exists document;
+drop table if exists request;
+drop table if exists employee;
+drop table if exists department;

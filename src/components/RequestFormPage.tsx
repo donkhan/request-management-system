@@ -121,31 +121,58 @@ export default function RequestFormPage({
     fileInputRef.current?.click();
   };
 
-  const handleAction = async (submit: boolean) => {
-    try {
-      setLoading(submit ? "submit" : "draft");
+  const handleSaveDraft = async () => {
+  try {
+    setLoading("draft");
 
-      await saveRequestWithDocuments({
-        isEditMode,
-        requestToEdit,
-        title,
-        description,
-        files,
-        existingDocs,
-        deletedDocIds,
-        submit,
-        userEmail: currentUser.email,
-      });
+    await saveRequestWithDocuments({
+      isEditMode,
+      requestToEdit,
+      title,
+      description,
+      files,
+      existingDocs,
+      deletedDocIds,
+      submit: false,
+      userEmail: currentUser.email,
+    });
 
-      onSuccess();
-      onBack();
-    } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Operation failed");
-    } finally {
-      setLoading(null);
-    }
-  };
+    onSuccess();
+    onBack();
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message || "Save draft failed");
+  } finally {
+    setLoading(null);
+  }
+};
+
+
+const handleSubmit = async () => {
+  try {
+    setLoading("submit");
+
+    await saveRequestWithDocuments({
+      isEditMode,
+      requestToEdit,
+      title,
+      description,
+      files,
+      existingDocs,
+      deletedDocIds,
+      submit: true,
+      userEmail: currentUser.email,
+    });
+
+    onSuccess();
+    onBack();
+  } catch (err: any) {
+    console.error(err);
+    alert(err.message || "Submit failed");
+  } finally {
+    setLoading(null);
+  }
+};
 
   // =====================================================
   // APPROVAL ACTIONS
@@ -376,7 +403,7 @@ export default function RequestFormPage({
           {!isApprovalMode && !isViewMode && (
             <div className="flex gap-4">
               <button
-                onClick={() => handleAction(false)}
+                onClick={() => handleSaveDraft()}
                 disabled={loading !== null}
                 className="px-6 py-3 bg-gray-500 text-white rounded-xl"
               >
@@ -384,7 +411,7 @@ export default function RequestFormPage({
               </button>
 
               <button
-                onClick={() => handleAction(true)}
+                onClick={() => handleSubmit()}
                 disabled={loading !== null}
                 className="px-8 py-3 bg-blue-600 text-white rounded-xl"
               >
