@@ -5,8 +5,11 @@ import RequestFormPage from "./components/RequestFormPage";
 import UserProfileBadge from "./components/UserProfileBadge";
 import { loginWithGoogle, logout } from "./services/authService";
 import { fetchEmployeeProfile } from "./services/employeeService";
-import { getDashboardData,getMyDecisionHistory } from "./services/requestService";
-import DecisionHistoryTable  from "./components/DecisionHistoryTable";
+import {
+  getDashboardData,
+  getMyDecisionHistory,
+} from "./services/requestService";
+import DecisionHistoryTable from "./components/DecisionHistoryTable";
 import type { Request } from "./types";
 
 interface NormalizedUser {
@@ -33,35 +36,45 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  // --------------------------------------------------
+  // Load Employee Profile
+  // --------------------------------------------------
   const loadEmployeeProfile = async (email: string) => {
     const profile = await fetchEmployeeProfile(email);
     setEmployeeProfile(profile);
   };
 
+  // --------------------------------------------------
+  // Fetch Dashboard Data
+  // --------------------------------------------------
   const fetchAllData = async (email: string) => {
-  try {
-    setIsRefreshing(true);
+    try {
+      setIsRefreshing(true);
 
-    const { myRequests, myApprovals } =
-      await getDashboardData(email);
+      const { myRequests, myApprovals } =
+        await getDashboardData(email);
 
-    const decisionHistory =
-      await getMyDecisionHistory(email);
+      const decisionHistory =
+        await getMyDecisionHistory(email);
 
-    setMyRequests(myRequests);
-    setMyApprovals(myApprovals);
-    setMyDecisions(decisionHistory);
+      setMyRequests(myRequests);
+      setMyApprovals(myApprovals);
+      setMyDecisions(decisionHistory);
 
-    setLastUpdated(new Date());
-  } catch (err) {
-    console.error("Failed to refresh data", err);
-  } finally {
-    setIsRefreshing(false);
-  }
-};
+      setLastUpdated(new Date());
+    } catch (err) {
+      console.error("Failed to refresh data", err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
+  // --------------------------------------------------
+  // Handle Login
+  // --------------------------------------------------
   const handleUserLogin = async (sessionUser: any) => {
     const email = sessionUser.email;
+
     const normalizedUser: NormalizedUser = {
       email,
       name:
@@ -73,62 +86,96 @@ export default function App() {
         sessionUser.user_metadata?.picture ??
         null,
     };
+
     setUser(normalizedUser);
+
     await loadEmployeeProfile(email);
     await fetchAllData(email);
   };
 
+  // --------------------------------------------------
+  // Auto Refresh (30s)
+  // --------------------------------------------------
   useEffect(() => {
-  const handleVisibility = () => {
-    if (document.visibilityState === "visible") {
-      console.warn("Tab resumed. Resetting Supabase state for demo.");
-      // Clear Supabase-related storage only
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith("sb-")) {
-          localStorage.removeItem(key);
-        }
-      });
-      sessionStorage.clear();
-      indexedDB.deleteDatabase("supabase.auth.token");
-      // Force full reload (releases lock)
-      window.location.reload();
-    }
-  };
-  document.addEventListener("visibilitychange", handleVisibility);
-  return () => {
-    document.removeEventListener("visibilitychange", handleVisibility);
-  };
-}, []);
+    if (!user?.email) return;
 
-  // ---------------- AUTH INITIALIZATION ----------------
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchAllData(user.email);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [user?.email]);
+
+  // --------------------------------------------------
+  // Visibility Reset (Demo Lock Fix)
+  // --------------------------------------------------
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        console.warn(
+          "Tab resumed. Resetting Supabase state for demo."
+        );
+
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("sb-")) {
+            localStorage.removeItem(key);
+          }
+        });
+
+        sessionStorage.clear();
+        indexedDB.deleteDatabase("supabase.auth.token");
+        window.location.reload();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibility
+      );
+    };
+  }, []);
+
+  // --------------------------------------------------
+  // Auth Initialization
+  // --------------------------------------------------
   useEffect(() => {
     let isMounted = true;
 
     const initAuth = async () => {
       const { data } = await getSupabase().auth.getSession();
       if (!isMounted) return;
+
       if (data.session?.user) {
         await handleUserLogin(data.session.user);
       }
     };
-    initAuth();
-    const { data: listener } = getSupabase().auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!isMounted) return;
 
-        if (session?.user) {
-          await handleUserLogin(session.user);
-        } else {
-          setUser(null);
-          setEmployeeProfile(null);
-          setMyRequests([]);
-          setMyApprovals([]);
-          setView("dashboard");
-          setSelectedRequest(null);
-          setLastUpdated(null);
+    initAuth();
+
+    const { data: listener } =
+      getSupabase().auth.onAuthStateChange(
+        async (_event, session) => {
+          if (!isMounted) return;
+
+          if (session?.user) {
+            await handleUserLogin(session.user);
+          } else {
+            setUser(null);
+            setEmployeeProfile(null);
+            setMyRequests([]);
+            setMyApprovals([]);
+            setMyDecisions([]);
+            setView("dashboard");
+            setSelectedRequest(null);
+            setLastUpdated(null);
+          }
         }
-      }
-    );
+      );
 
     return () => {
       isMounted = false;
@@ -136,7 +183,6 @@ export default function App() {
     };
   }, []);
 
-  
   const handleGoogleLogin = async () => {
     await loginWithGoogle();
   };
@@ -145,7 +191,9 @@ export default function App() {
     await logout();
   };
 
-  // ---------------- LOGIN PAGE ----------------
+  // --------------------------------------------------
+  // Login Screen
+  // --------------------------------------------------
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-100">
@@ -165,7 +213,9 @@ export default function App() {
     );
   }
 
-  // ---------------- MAIN LAYOUT ----------------
+  // --------------------------------------------------
+  // Main Layout
+  // --------------------------------------------------
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-md px-8 py-3 flex items-center justify-between">
@@ -282,19 +332,18 @@ export default function App() {
             </section>
 
             <section>
-  <h2 className="text-lg font-semibold mb-6">
-    My Decision History
-  </h2>
+              <h2 className="text-lg font-semibold mb-6">
+                My Decision History
+              </h2>
 
-  <DecisionHistoryTable
-    decisions={myDecisions}
-    onView={(req) => {
-      setSelectedRequest(req);
-      setView("view");
-    }}
-  />
-</section>    
-
+              <DecisionHistoryTable
+                decisions={myDecisions}
+                onView={(req) => {
+                  setSelectedRequest(req);
+                  setView("view");
+                }}
+              />
+            </section>
           </div>
         )}
 
