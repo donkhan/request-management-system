@@ -19,6 +19,7 @@ interface Props {
     name?: string;
     role?: string;
   };
+  department?: string;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -27,6 +28,7 @@ export default function RequestFormPage({
   mode = "create",
   requestToEdit,
   currentUser,
+  department,
   onBack,
   onSuccess,
 }: Props) {
@@ -134,6 +136,7 @@ export default function RequestFormPage({
         deletedDocIds,
         submit: false,
         userEmail: currentUser.email,
+        department,
       });
 
       onSuccess();
@@ -159,6 +162,7 @@ export default function RequestFormPage({
         deletedDocIds,
         submit: true,
         userEmail: currentUser.email,
+        department,
       });
 
       onSuccess();
@@ -184,6 +188,7 @@ export default function RequestFormPage({
         comment,
         currentUserEmail: currentUser.email,
         createdBy: requestToEdit.created_by,
+        department,
       });
 
       onSuccess();

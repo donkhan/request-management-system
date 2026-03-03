@@ -36,6 +36,7 @@ create table request (
   description text,
   created_by text not null references employee(email),
   current_approver text  references employee(email),
+  department text NOT NULL REFERENCES department(name),
   status text not null default 'Pending',
   created_at timestamp with time zone default now()
 );
@@ -61,5 +62,6 @@ create table audit_log (
   acted_by text not null,        -- email of actor
   acted_to text,                 -- next approver (nullable)
   comment text not null,
+  department text NOT NULL REFERENCES department(name),
   created_at timestamp with time zone default now()
 );

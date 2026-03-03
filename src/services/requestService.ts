@@ -2,9 +2,6 @@ import { getSupabase } from "../supabase";
 import { getDepartmentHead } from "./employeeService";
 import { deleteDocuments, uploadDocuments } from "./documentService";
 
-/* =====================================================
-   SHARED
-===================================================== */
 
 function db() {
   return getSupabase();
@@ -37,16 +34,14 @@ async function resolveWorkflow(userEmail: string, submit: boolean) {
   };
 }
 
-/* =====================================================
-   REQUEST CRUD
-===================================================== */
 
 async function createRequest(
   title: string,
   description: string,
   userEmail: string,
   status: string,
-  approver: string | null
+  approver: string | null,
+  department: string,
 ) {
   const { data, error } = await db()
     .from("request")
@@ -56,6 +51,7 @@ async function createRequest(
       created_by: userEmail,
       status,
       current_approver: approver,
+      department : department
     })
     .select()
     .single();
@@ -97,6 +93,7 @@ export async function saveRequestWithDocuments({
   existingDocs,
   deletedDocIds,
   submit,
+  department,
 }: any) {
   const userEmail = await getCurrentUserEmail();
 
@@ -104,21 +101,24 @@ export async function saveRequestWithDocuments({
     userEmail,
     submit
   );
-
+  if (!isEditMode && !department) {
+   throw new Error("Department missing while creating request.");
+  }
   const request = isEditMode
     ? await updateRequest(
         requestToEdit.id,
         title,
         description,
         status,
-        approver
+        approver,
       )
     : await createRequest(
         title,
         description,
         userEmail,
         status,
-        approver
+        approver,
+        department,
       );
 
   if (submit) {
@@ -135,6 +135,7 @@ export async function saveRequestWithDocuments({
       acted_by: userEmail,
       acted_to: approver,
       comment: auditComment,
+      department: department,
     });
   }
 
@@ -147,9 +148,6 @@ export async function saveRequestWithDocuments({
   return request;
 }
 
-/* =====================================================
-   APPROVAL ACTION
-===================================================== */
 
 function buildApprovalUpdate(
   action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED",
@@ -183,6 +181,7 @@ export async function performApprovalAction({
   comment,
   currentUserEmail,
   createdBy,
+  department,
 }: {
   requestId: string;
   action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED";
@@ -223,6 +222,7 @@ export async function performApprovalAction({
     acted_by: currentUserEmail,
     acted_to: updateData.current_approver,
     comment,
+    department: department,
   });
 }
 

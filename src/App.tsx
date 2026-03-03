@@ -354,6 +354,7 @@ export default function App() {
             mode={view}
             requestToEdit={selectedRequest || undefined}
             currentUser={user}
+            department={employeeProfile?.department} 
             onBack={() => {
               setView("dashboard");
               setSelectedRequest(null);
