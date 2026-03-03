@@ -46,6 +46,7 @@ export default function RequestFormPage({
   const [isDownloading, setIsDownloading] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const supabase = getSupabase();
 
   const status = requestToEdit?.status?.toUpperCase();
 
@@ -138,7 +139,6 @@ export default function RequestFormPage({
       onSuccess();
       onBack();
     } catch (err: any) {
-      console.error(err);
       alert(err.message || "Save draft failed");
     } finally {
       setLoading(null);
@@ -164,7 +164,6 @@ export default function RequestFormPage({
       onSuccess();
       onBack();
     } catch (err: any) {
-      console.error(err);
       alert(err.message || "Submit failed");
     } finally {
       setLoading(null);
@@ -193,8 +192,6 @@ export default function RequestFormPage({
       alert(err.message || "Approval action failed");
     }
   };
-
-  const supabase = getSupabase();
 
   const combinedDocs = [
     ...existingDocs.map((doc) => ({
@@ -308,7 +305,6 @@ export default function RequestFormPage({
         {combinedDocs.length > 0 && (
           <div className="mb-10">
             <h2 className="text-lg font-semibold mb-4">Documents</h2>
-
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {combinedDocs.map((item: any, index: number) => (
                 <div
@@ -329,39 +325,46 @@ export default function RequestFormPage({
                   }}
                 >
                   {item.type === "new" ? (
-                    <>
-                      {item.file.type.startsWith("image") ? (
-                        <img
-                          src={URL.createObjectURL(item.file)}
-                          className="h-32 w-full object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
-                          📄 {item.file.name}
-                        </div>
-                      )}
-                    </>
+                    item.file.type.startsWith("image") ? (
+                      <img
+                        src={URL.createObjectURL(item.file)}
+                        className="h-32 w-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                        📄 {item.file.name}
+                      </div>
+                    )
+                  ) : isImageFile(item.file_name) ? (
+                    <img
+                      src={
+                        supabase.storage
+                          .from("request-documents")
+                          .getPublicUrl(item.file_path).data.publicUrl
+                      }
+                      className="h-32 w-full object-cover rounded-lg"
+                    />
                   ) : (
-                    <>
-                      {isImageFile(item.file_name) ? (
-                        <img
-                          src={
-                            supabase.storage
-                              .from("request-documents")
-                              .getPublicUrl(item.file_path).data.publicUrl
-                          }
-                          className="h-32 w-full object-cover rounded-lg"
-                        />
-                      ) : (
-                        <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
-                          📄 {item.file_name}
-                        </div>
-                      )}
-                    </>
+                    <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                      📄 {item.file_name}
+                    </div>
                   )}
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* APPROVAL COMMENT */}
+        {isApprovalMode && (
+          <div className="mb-8">
+            <textarea
+              rows={4}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              className="w-full border rounded-xl p-4"
+              placeholder="Enter mandatory comment..."
+            />
           </div>
         )}
 
@@ -383,6 +386,15 @@ export default function RequestFormPage({
               >
                 Submit
               </button>
+            </div>
+          )}
+
+          {isApprovalMode && (
+            <div className="flex gap-3">
+              <button onClick={() => handleApprovalAction("APPROVED")} className="px-4 py-2 bg-green-600 text-white rounded-xl">Approve</button>
+              <button onClick={() => handleApprovalAction("REJECTED")} className="px-4 py-2 bg-red-600 text-white rounded-xl">Reject</button>
+              <button onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")} className="px-4 py-2 bg-yellow-600 text-white rounded-xl">Reject With Edit</button>
+              <button onClick={() => handleApprovalAction("FORWARDED")} className="px-4 py-2 bg-blue-600 text-white rounded-xl">Forward</button>
             </div>
           )}
         </div>
