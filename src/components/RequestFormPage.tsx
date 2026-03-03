@@ -9,6 +9,7 @@ import {
 import { fetchRequestDocuments } from "../services/documentService";
 import ImageSlideshowModal from "../components/ImageSlideshowModal";
 import AuditLog from "../components/AuditLog";
+import { getSupabase } from "../supabase";
 
 interface Props {
   mode?: "create" | "edit" | "approval" | "view";
@@ -46,10 +47,6 @@ export default function RequestFormPage({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // =====================================================
-  // WORKFLOW PERMISSION MODEL
-  // =====================================================
-
   const status = requestToEdit?.status?.toUpperCase();
 
   const isOriginator =
@@ -66,7 +63,8 @@ export default function RequestFormPage({
     !isViewMode &&
     (isNewRequest || (isOriginator && isEditableState));
 
-  const canDeleteExisting = isOriginator && isEditableState;
+  const canDeleteExisting =
+    isOriginator && isEditableState;
 
   useEffect(() => {
     if (!requestToEdit) return;
@@ -77,7 +75,7 @@ export default function RequestFormPage({
     fetchRequestDocuments(requestToEdit.id)
       .then(setExistingDocs)
       .catch((err) =>
-        console.error("Failed to fetch documents", err),
+        console.error("Failed to fetch documents", err)
       );
   }, [requestToEdit]);
 
@@ -89,7 +87,7 @@ export default function RequestFormPage({
       await downloadAttachmentsAsZip(
         requestToEdit.id,
         title,
-        existingDocs,
+        existingDocs
       );
     } catch (err: any) {
       alert(err.message || "Download failed");
@@ -101,23 +99,15 @@ export default function RequestFormPage({
   const isImageFile = (fileName: string) =>
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
-    setFiles((prev) => [
-      ...prev,
-      ...Array.from(e.target.files!),
-    ]);
+    setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files.length > 0) {
-      setFiles((prev) => [
-        ...prev,
-        ...Array.from(e.dataTransfer.files),
-      ]);
+      setFiles((prev) => [...prev, ...Array.from(e.dataTransfer.files)]);
     }
   };
 
@@ -186,7 +176,7 @@ export default function RequestFormPage({
       | "APPROVED"
       | "REJECTED"
       | "REJECTED_WITH_EDIT"
-      | "FORWARDED",
+      | "FORWARDED"
   ) => {
     try {
       await performApprovalAction({
@@ -203,6 +193,8 @@ export default function RequestFormPage({
       alert(err.message || "Approval action failed");
     }
   };
+
+  const supabase = getSupabase();
 
   const combinedDocs = [
     ...existingDocs.map((doc) => ({
@@ -221,6 +213,7 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
+
         {/* Download Button */}
         {requestToEdit && existingDocs.length > 0 && (
           <div className="flex justify-end mb-6">
@@ -242,21 +235,7 @@ export default function RequestFormPage({
             onClick={onBack}
             className="flex items-center gap-2 px-5 py-2 bg-gray-200 rounded-xl hover:bg-gray-300 transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back
+            ← Back
           </button>
         </div>
 
@@ -270,11 +249,145 @@ export default function RequestFormPage({
             : "Create New Request"}
         </h1>
 
-        {/* FORM + DOCUMENTS + BUTTONS unchanged (already cleanly structured above) */}
+        {/* TITLE */}
+        <div className="mb-6">
+          <label className="block mb-2 font-medium text-gray-700">
+            Title
+          </label>
+          <input
+            type="text"
+            value={title}
+            readOnly={isApprovalMode || isViewMode}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full border rounded-xl p-4"
+          />
+        </div>
 
-        {requestToEdit && (
-          <AuditLog requestId={requestToEdit.id} />
+        {/* DESCRIPTION */}
+        <div className="mb-8">
+          <label className="block mb-2 font-medium text-gray-700">
+            Description
+          </label>
+          <textarea
+            rows={5}
+            value={description}
+            readOnly={isApprovalMode || isViewMode}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full border rounded-xl p-4"
+          />
+        </div>
+
+        {/* FILE UPLOAD */}
+        {canUpload && (
+          <div className="mb-10">
+            <input
+              type="file"
+              multiple
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div
+              onClick={openFileDialog}
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              className="border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition"
+            >
+              <div className="text-5xl mb-4">📎</div>
+              <p className="text-lg font-semibold text-gray-700">
+                Drag & Drop files here
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                or click to browse
+              </p>
+            </div>
+          </div>
         )}
+
+        {/* DOCUMENT PREVIEW */}
+        {combinedDocs.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold mb-4">Documents</h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {combinedDocs.map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className="relative bg-gray-100 rounded-xl p-4 cursor-pointer"
+                  onClick={() => {
+                    if (
+                      item.type === "existing" &&
+                      isImageFile(item.file_name)
+                    ) {
+                      const existingIndex = existingDocs.findIndex(
+                        (d) => d.id === item.id
+                      );
+                      if (existingIndex !== -1) {
+                        setPreviewIndex(existingIndex);
+                      }
+                    }
+                  }}
+                >
+                  {item.type === "new" ? (
+                    <>
+                      {item.file.type.startsWith("image") ? (
+                        <img
+                          src={URL.createObjectURL(item.file)}
+                          className="h-32 w-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                          📄 {item.file.name}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {isImageFile(item.file_name) ? (
+                        <img
+                          src={
+                            supabase.storage
+                              .from("request-documents")
+                              .getPublicUrl(item.file_path).data.publicUrl
+                          }
+                          className="h-32 w-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                          📄 {item.file_name}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* BUTTONS */}
+        <div className="flex justify-between mb-8">
+          {!isApprovalMode && !isViewMode && (
+            <div className="flex gap-4">
+              <button
+                onClick={handleSaveDraft}
+                disabled={loading !== null}
+                className="px-6 py-3 bg-gray-500 text-white rounded-xl"
+              >
+                Save Draft
+              </button>
+              <button
+                onClick={handleSubmit}
+                disabled={loading !== null}
+                className="px-8 py-3 bg-blue-600 text-white rounded-xl"
+              >
+                Submit
+              </button>
+            </div>
+          )}
+        </div>
+
+        {requestToEdit && <AuditLog requestId={requestToEdit.id} />}
 
         {/* BOTTOM BACK */}
         <div className="flex justify-start mt-8">
@@ -282,21 +395,7 @@ export default function RequestFormPage({
             onClick={onBack}
             className="flex items-center gap-2 px-6 py-3 bg-gray-200 rounded-xl hover:bg-gray-300 transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            GO BACK
+            ← Back
           </button>
         </div>
       </div>
