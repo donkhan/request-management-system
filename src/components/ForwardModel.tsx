@@ -44,32 +44,40 @@ export default function ForwardModal({
   }, [selectedDept]);
 
   const handleForward = async () => {
-    if (!comment?.trim()) {
-      alert("Comment is required");
-      return;
-    }
+  let targetEmail: string | null = selectedUser;
 
-    let targetEmail: string | null = selectedUser;
-    if (mode === "HEAD") {
-      targetEmail = await getDepartmentHead(selectedDept);
-    }
+  if (mode === "HEAD") {
+    targetEmail = await getDepartmentHead(selectedDept);
+  }
 
-    if (!targetEmail) {
-      alert("Please select a valid user");
-      return;
-    }
+  if (!targetEmail) {
+    alert("Please select a valid user");
+    return;
+  }
 
-    await forwardRequestToUser({
-      requestId,
-      newApproverEmail: targetEmail,
-      currentUserEmail,
-      department,
-      comment,
-    });
-
-    onSuccess();
+  // 🟦 SUBMIT TO FLOW (no mandatory comment)
+  if (typeof onSuccess === "function") {
+    onSuccess(targetEmail);
     onClose();
-  };
+    return;
+  }
+
+  // 🟩 APPROVAL FORWARD FLOW (comment required)
+  if (!comment?.trim()) {
+    alert("Comment is required");
+    return;
+  }
+
+  await forwardRequestToUser({
+    requestId,
+    newApproverEmail: targetEmail,
+    currentUserEmail,
+    department,
+    comment,
+  });
+
+  onClose();
+};
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center">

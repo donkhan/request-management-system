@@ -49,6 +49,7 @@ export default function RequestFormPage({
   const [isDownloading, setIsDownloading] = useState(false);
 
   const [showForwardModal, setShowForwardModal] = useState(false);
+  const [showSubmitForwardModal, setShowSubmitForwardModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = getSupabase();
@@ -154,7 +155,15 @@ export default function RequestFormPage({
   const handleSubmit = async () => {
     try {
       setLoading("submit");
+      if (!title.trim()) {
+    alert("Title is required.");
+    return;
+  }
 
+  if (!description.trim()) {
+    alert("Description is required.");
+    return;
+  }
       await saveRequestWithDocuments({
         isEditMode,
         requestToEdit,
@@ -425,6 +434,13 @@ export default function RequestFormPage({
               >
                 Submit
               </button>
+              <button
+  onClick={() => setShowSubmitForwardModal(true)}
+  disabled={loading !== null}
+  className="px-8 py-3 bg-indigo-600 text-white rounded-xl"
+>
+  Submit To
+</button>
             </div>
           )}
 
@@ -476,6 +492,42 @@ export default function RequestFormPage({
     }}
   />
 )}
+
+{showSubmitForwardModal && (
+  <ForwardModal
+    requestId={requestToEdit?.id}
+    currentUserEmail={currentUser.email}
+    department={department}
+    comment={comment}
+    onClose={() => setShowSubmitForwardModal(false)}
+    onSuccess={async (targetEmail: string) => {
+      try {
+        setLoading("submit");
+
+        await saveRequestWithDocuments({
+          isEditMode,
+          requestToEdit,
+          title,
+          description,
+          files,
+          existingDocs,
+          deletedDocIds,
+          submit: true,
+          department,
+          nextApproverEmail: targetEmail,   // 👈 KEY PART
+        });
+
+        onSuccess();
+        onBack();
+      } catch (err: any) {
+        alert(err.message || "Submit To failed");
+      } finally {
+        setLoading(null);
+      }
+    }}
+  />
+)}
+
     </div>
   );
 }

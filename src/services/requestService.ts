@@ -94,13 +94,20 @@ export async function saveRequestWithDocuments({
   deletedDocIds,
   submit,
   department,
+  nextApproverEmail,
 }: any) {
   const userEmail = await getCurrentUserEmail();
 
-  const { status, approver } = await resolveWorkflow(
-    userEmail,
-    submit
-  );
+  const workflow = await resolveWorkflow(userEmail, submit);
+
+let status = workflow.status;
+let approver = workflow.approver;
+
+// 👇 override if manually submitting
+if (submit && nextApproverEmail) {
+  approver = nextApproverEmail;
+}
+
   if (!isEditMode && !department) {
    throw new Error("Department missing while creating request.");
   }
