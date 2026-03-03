@@ -285,3 +285,41 @@ export async function getMyDecisionHistory(email: string) {
 
   return data ?? [];
 }
+
+
+export async function forwardRequestToUser({
+  requestId,
+  newApproverEmail,
+  currentUserEmail,
+  department,
+  comment
+}: {
+  requestId: string;
+  newApproverEmail: string;
+  currentUserEmail: string;
+  department?: string;
+}) {
+  const supabase = getSupabase();
+
+  // Update current approver
+  const { error: updateError } = await supabase
+    .from("request")
+    .update({ current_approver: newApproverEmail })
+    .eq("id", requestId);
+
+  if (updateError) throw updateError;
+
+  // Insert audit log
+  const { error: logError } = await supabase
+    .from("audit_log")
+    .insert({
+      request_id: requestId,
+      action: "FORWARDED",
+      acted_by: currentUserEmail,
+      acted_to: newApproverEmail,
+      department: department,
+      comment: comment,
+    });
+
+  if (logError) throw logError;
+}

@@ -8,6 +8,7 @@ import {
 
 import { fetchRequestDocuments } from "../services/documentService";
 import ImageSlideshowModal from "../components/ImageSlideshowModal";
+import ForwardModal  from "./ForwardModel";
 import AuditLog from "../components/AuditLog";
 import { getSupabase } from "../supabase";
 
@@ -46,6 +47,8 @@ export default function RequestFormPage({
   const [loading, setLoading] = useState<"draft" | "submit" | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  const [showForwardModal, setShowForwardModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = getSupabase();
@@ -399,7 +402,13 @@ export default function RequestFormPage({
               <button onClick={() => handleApprovalAction("APPROVED")} className="px-4 py-2 bg-green-600 text-white rounded-xl">Approve</button>
               <button onClick={() => handleApprovalAction("REJECTED")} className="px-4 py-2 bg-red-600 text-white rounded-xl">Reject</button>
               <button onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")} className="px-4 py-2 bg-yellow-600 text-white rounded-xl">Reject With Edit</button>
-              <button onClick={() => handleApprovalAction("FORWARDED")} className="px-4 py-2 bg-blue-600 text-white rounded-xl">Forward</button>
+              <button onClick={() => handleApprovalAction("FORWARDED")} className="px-4 py-2 bg-blue-600 text-white rounded-xl">Escalate</button>
+              <button
+  onClick={() => setShowForwardModal(true)}
+  className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
+>
+  Forward
+</button>
             </div>
           )}
         </div>
@@ -422,6 +431,20 @@ export default function RequestFormPage({
         previewIndex={previewIndex}
         setPreviewIndex={setPreviewIndex}
       />
+
+          {showForwardModal && requestToEdit && (
+  <ForwardModal
+    requestId={requestToEdit.id}
+    currentUserEmail={currentUser.email}
+    department={department}
+    comment={comment}                 // 👈 PASS THIS
+    onClose={() => setShowForwardModal(false)}
+    onSuccess={() => {
+      onSuccess();
+      onBack();
+    }}
+  />
+)}
     </div>
   );
 }
