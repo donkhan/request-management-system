@@ -3,6 +3,7 @@ interface Request {
   title: string;
   description: string;
   status: string;
+  department: string;
   created_at: string;
   created_by?: string | null;
   current_approver?: string | null;
@@ -32,6 +33,9 @@ export default function RequestsTable({
               TITLE
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+              DEPARTMENT
+            </th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
               ORIGIN
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
@@ -57,8 +61,15 @@ export default function RequestsTable({
                 key={request.id}
                 className="border-t hover:bg-gray-50 transition"
               >
+
                 <td className="px-6 py-4 text-sm">
                   {request.title}
+                </td>
+
+                <td className="px-6 py-4 text-sm">
+                  <span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium">
+                    {request.department}
+                  </span>
                 </td>
 
                 <td className="px-6 py-4 text-sm text-gray-600">

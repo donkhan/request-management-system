@@ -6,6 +6,7 @@ export interface Request {
   created_at: string;
   created_by?: string | null;
   current_approver?: string | null;
+  department: string;
 }
 
 
@@ -15,4 +16,5 @@ export interface DecisionRow {
   created_at: string;
   request_id: string;
   request: Request;
+  department: string;
 }

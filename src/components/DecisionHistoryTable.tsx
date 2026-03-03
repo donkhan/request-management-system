@@ -24,6 +24,7 @@ export default function DecisionHistoryTable({
           <tr>
             <th className="px-6 py-4">Title</th>
             <th className="px-6 py-4">Origin</th>
+            <th className="px-6 py-4">Department</th>
             <th className="px-6 py-4">Decision</th>
             <th className="px-6 py-4">Decision Date</th>
             <th className="px-6 py-4 text-center">Action</th>
@@ -39,15 +40,19 @@ export default function DecisionHistoryTable({
                 key={row.id}
                 className="hover:bg-gray-50 transition"
               >
-                {/* Title */}
                 <td className="px-6 py-4 font-medium text-gray-800">
                   {request?.title ?? "Untitled"}
                 </td>
 
-                {/* Origin */}
                 <td className="px-6 py-4 text-gray-600">
                   {request?.created_by ?? "-"}
                 </td>
+
+                <td className="px-6 py-4">
+  <span className="px-2 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-medium">
+    {request?.department ?? "-"}
+  </span>
+</td>
 
                 {/* Decision */}
                 <td className="px-6 py-4">

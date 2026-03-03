@@ -265,12 +265,14 @@ export async function getMyDecisionHistory(email: string) {
     .select(`
       id,
       action,
+      department,
       comment,
       created_at,
       request_id,
       request:request_id (
         id,
         title,
+        department,
         created_by,
         status
       )
