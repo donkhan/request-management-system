@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getSupabase } from "../supabase";
+import { fetchAuditLogs } from "../services/auditLogService";
 
 interface Props {
   requestId: string;
@@ -11,7 +11,8 @@ interface AuditLogEntry {
   acted_by: string;
   acted_to: string | null;
   comment: string | null;
-  occurred_at: string;
+  created_at: string;
+  department: string;
 }
 
 export default function AuditLog({ requestId }: Props) {
@@ -25,40 +26,33 @@ export default function AuditLog({ requestId }: Props) {
   }, [requestId]);
 
   const fetchLogs = async () => {
-    setLoading(true);
-
-    const { data, error } = await getSupabase()
-      .from("audit_log")
-      .select("*")
-      .eq("request_id", requestId)
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Audit fetch error:", error);
+    try {
+      setLoading(true);
+      const data = await fetchAuditLogs(requestId);
+      setLogs(data);
+    } catch (err) {
+      console.error("Audit fetch error:", err);
+    } finally {
+      setLoading(false);
     }
-
-    setLogs(data || []);
-    setLoading(false);
   };
 
-  // 🔥 Safe Date Formatter (Browser Compatible)
   const formatDate = (dateValue?: string) => {
-  if (!dateValue) return "—";
+    if (!dateValue) return "—";
 
-  const date = new Date(dateValue);
+    const date = new Date(dateValue);
+    if (isNaN(date.getTime())) return dateValue;
 
-  if (isNaN(date.getTime())) return dateValue;
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
 
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const seconds = String(date.getSeconds()).padStart(2, "0");
-
-  return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
-};
+    return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+  };
 
   const getColor = (action: string) => {
     switch (action) {
@@ -96,14 +90,12 @@ export default function AuditLog({ requestId }: Props) {
       </h2>
 
       <div className="relative">
-
         {/* Vertical Line */}
         <div className="absolute left-4 top-0 h-full w-[2px] bg-gray-200" />
 
         <div className="space-y-12">
           {logs.map((log) => (
             <div key={log.id} className="relative pl-14">
-
               {/* Timeline Dot */}
               <div
                 className={`absolute left-0 top-2 w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md ${getColor(
@@ -115,22 +107,30 @@ export default function AuditLog({ requestId }: Props) {
 
               {/* Card */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition">
-
                 <div className="flex justify-between items-start">
                   <div className="font-semibold text-gray-800 tracking-wide">
                     {log.action.replace(/_/g, " ")}
                   </div>
 
                   <div className="text-xs text-gray-400">
-                    {formatDate(log.occurred_at)}
-                   </div>
+                    {formatDate(log.created_at)}
+                  </div>
                 </div>
 
-                <div className="mt-4 text-sm text-gray-700 space-y-1">
+                <div className="mt-4 text-sm text-gray-700 space-y-2">
                   <div>
                     <span className="font-medium">From:</span>{" "}
                     {log.acted_by}
                   </div>
+
+                  {log.department && (
+                    <div>
+                      <span className="font-medium">Department:</span>{" "}
+                      <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+                        {log.department}
+                      </span>
+                    </div>
+                  )}
 
                   {log.acted_to && (
                     <div>
@@ -146,7 +146,6 @@ export default function AuditLog({ requestId }: Props) {
                     </div>
                   )}
                 </div>
-
               </div>
             </div>
           ))}
