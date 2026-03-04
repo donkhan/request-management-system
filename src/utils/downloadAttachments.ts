@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { getSupabase } from "../supabase";
+import { getSignedDownloadUrl } from "../services/downloadService";
 
 interface Attachment {
   file_name: string;
@@ -20,28 +20,24 @@ export const downloadAttachmentsAsZip = async (
   const zip = new JSZip();
 
   for (const doc of attachments) {
-    const supabase = getSupabase();
-    const { data, error } = await supabase.storage
-      .from(bucketName)
-      .createSignedUrl(doc.file_path, 60);
+    const signedUrl = await getSignedDownloadUrl(
+      doc.file_path,
+      bucketName
+    );
 
-    if (error || !data?.signedUrl) {
-      console.error(
-        "Failed to generate signed URL for",
-        doc.file_name
-      );
+    if (!signedUrl) {
+      console.error("Failed to download", doc.file_name);
       continue;
     }
 
-    const response = await fetch(data.signedUrl);
+    const response = await fetch(signedUrl);
     const blob = await response.blob();
 
-    // Sanitize filename for safe ZIP extraction
     const safeFileName = doc.file_name
-      .normalize("NFC") // normalize unicode
-      .replace(/[\\/:*?"<>|]/g, "") // remove invalid characters
-      .replace(/[^\x20-\x7E]/g, "") // remove non-ASCII characters
-      .replace(/\s+/g, "_"); // replace spaces with underscore
+      .normalize("NFC")
+      .replace(/[\\/:*?"<>|]/g, "")
+      .replace(/[^\x20-\x7E]/g, "")
+      .replace(/\s+/g, "_");
 
     zip.file(safeFileName || "file", blob);
   }
@@ -49,9 +45,9 @@ export const downloadAttachmentsAsZip = async (
   const zipBlob = await zip.generateAsync({ type: "blob" });
 
   const safeTitle = requestTitle
-    .replace(/[\\/:*?"<>|]/g, "") // remove invalid characters
-    .replace(/\s+/g, "_") // replace spaces with underscore
-    .substring(0, 80); // limit length
+    .replace(/[\\/:*?"<>|]/g, "")
+    .replace(/\s+/g, "_")
+    .substring(0, 80);
 
   saveAs(
     zipBlob,
