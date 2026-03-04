@@ -2,7 +2,6 @@ import { getSupabase } from "../supabase";
 import { getDepartmentHead } from "./employeeService";
 import { deleteDocuments, uploadDocuments } from "./documentService";
 
-
 function db() {
   return getSupabase();
 }
@@ -34,7 +33,6 @@ async function resolveWorkflow(userEmail: string, submit: boolean) {
   };
 }
 
-
 async function createRequest(
   title: string,
   description: string,
@@ -51,7 +49,7 @@ async function createRequest(
       created_by: userEmail,
       status,
       current_approver: approver,
-      department : department
+      department: department,
     })
     .select()
     .single();
@@ -65,7 +63,7 @@ async function updateRequest(
   title: string,
   description: string,
   status: string,
-  approver: string | null
+  approver: string | null,
 ) {
   const { data, error } = await db()
     .from("request")
@@ -83,7 +81,6 @@ async function updateRequest(
   return data;
 }
 
-
 export async function saveRequestWithDocuments({
   isEditMode,
   requestToEdit,
@@ -100,16 +97,16 @@ export async function saveRequestWithDocuments({
 
   const workflow = await resolveWorkflow(userEmail, submit);
 
-let status = workflow.status;
-let approver = workflow.approver;
+  let status = workflow.status;
+  let approver = workflow.approver;
 
-// 👇 override if manually submitting
-if (submit && nextApproverEmail) {
-  approver = nextApproverEmail;
-}
+  // 👇 override if manually submitting
+  if (submit && nextApproverEmail) {
+    approver = nextApproverEmail;
+  }
 
   if (!isEditMode && !department) {
-   throw new Error("Department missing while creating request.");
+    throw new Error("Department missing while creating request.");
   }
   const request = isEditMode
     ? await updateRequest(
@@ -131,8 +128,8 @@ if (submit && nextApproverEmail) {
   if (submit) {
     const truncatedDescription =
       description.length > 500
-      ? description.substring(0, 500) + "..."
-      : description;
+        ? description.substring(0, 500) + "..."
+        : description;
 
     const auditComment = `Title: ${title}
     Description: ${truncatedDescription}`;
@@ -155,11 +152,10 @@ if (submit && nextApproverEmail) {
   return request;
 }
 
-
 function buildApprovalUpdate(
   action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED",
   createdBy: string,
-  nextApprover?: string | null
+  nextApprover?: string | null,
 ) {
   switch (action) {
     case "APPROVED":
@@ -230,19 +226,12 @@ export async function performApprovalAction({
     }
 
     if (action === "REJECTED") {
-      await supabase
-        .from("employee")
-        .delete()
-        .eq("email", request.created_by);
+      await supabase.from("employee").delete().eq("email", request.created_by);
     }
   }
 
   // 🔹 3️⃣ Normal Request Status Update
-  const updateData = buildApprovalUpdate(
-    action,
-    createdBy,
-    nextApprover
-  );
+  const updateData = buildApprovalUpdate(action, createdBy, nextApprover);
 
   const { error } = await supabase
     .from("request")
@@ -261,7 +250,6 @@ export async function performApprovalAction({
     department: department,
   });
 }
-
 
 export async function getDashboardData(email: string) {
   const supabase = db();
@@ -289,13 +277,13 @@ export async function getDashboardData(email: string) {
   };
 }
 
-
 export async function getMyDecisionHistory(email: string) {
   const supabase = db();
 
   const { data, error } = await supabase
     .from("audit_log")
-    .select(`
+    .select(
+      `
       id,
       action,
       department,
@@ -309,7 +297,8 @@ export async function getMyDecisionHistory(email: string) {
         created_by,
         status
       )
-    `)
+    `,
+    )
     .eq("acted_by", email)
     .in("action", ["APPROVED", "REJECTED"])
     .order("created_at", { ascending: false });
@@ -319,13 +308,12 @@ export async function getMyDecisionHistory(email: string) {
   return data ?? [];
 }
 
-
 export async function forwardRequestToUser({
   requestId,
   newApproverEmail,
   currentUserEmail,
   department,
-  comment
+  comment,
 }: {
   requestId: string;
   newApproverEmail: string;
@@ -344,16 +332,14 @@ export async function forwardRequestToUser({
   if (updateError) throw updateError;
 
   // Insert audit log
-  const { error: logError } = await supabase
-    .from("audit_log")
-    .insert({
-      request_id: requestId,
-      action: "FORWARDED",
-      acted_by: currentUserEmail,
-      acted_to: newApproverEmail,
-      department: department,
-      comment: comment,
-    });
+  const { error: logError } = await supabase.from("audit_log").insert({
+    request_id: requestId,
+    action: "FORWARDED",
+    acted_by: currentUserEmail,
+    acted_to: newApproverEmail,
+    department: department,
+    comment: comment,
+  });
 
   if (logError) throw logError;
 }

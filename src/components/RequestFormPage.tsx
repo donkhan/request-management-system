@@ -8,7 +8,7 @@ import {
 
 import { fetchRequestDocuments } from "../services/documentService";
 import ImageSlideshowModal from "../components/ImageSlideshowModal";
-import ForwardModal  from "./ForwardModel";
+import ForwardModal from "./ForwardModel";
 import AuditLog from "../components/AuditLog";
 import { getSupabase } from "../supabase";
 
@@ -62,16 +62,14 @@ export default function RequestFormPage({
 
   const isNewRequest = !requestToEdit;
 
-  const isEditableState =
-    status === "DRAFT" || status === "REJECTED_WITH_EDIT";
+  const isEditableState = status === "DRAFT" || status === "REJECTED_WITH_EDIT";
 
   const canUpload =
     !isApprovalMode &&
     !isViewMode &&
     (isNewRequest || (isOriginator && isEditableState));
 
-  const canDeleteExisting =
-    isOriginator && isEditableState;
+  const canDeleteExisting = isOriginator && isEditableState;
 
   useEffect(() => {
     if (!requestToEdit) return;
@@ -81,9 +79,7 @@ export default function RequestFormPage({
 
     fetchRequestDocuments(requestToEdit.id)
       .then(setExistingDocs)
-      .catch((err) =>
-        console.error("Failed to fetch documents", err)
-      );
+      .catch((err) => console.error("Failed to fetch documents", err));
   }, [requestToEdit]);
 
   const handleDownloadAll = async () => {
@@ -91,11 +87,7 @@ export default function RequestFormPage({
 
     try {
       setIsDownloading(true);
-      await downloadAttachmentsAsZip(
-        requestToEdit.id,
-        title,
-        existingDocs
-      );
+      await downloadAttachmentsAsZip(requestToEdit.id, title, existingDocs);
     } catch (err: any) {
       alert(err.message || "Download failed");
     } finally {
@@ -156,14 +148,14 @@ export default function RequestFormPage({
     try {
       setLoading("submit");
       if (!title.trim()) {
-    alert("Title is required.");
-    return;
-  }
+        alert("Title is required.");
+        return;
+      }
 
-  if (!description.trim()) {
-    alert("Description is required.");
-    return;
-  }
+      if (!description.trim()) {
+        alert("Description is required.");
+        return;
+      }
       await saveRequestWithDocuments({
         isEditMode,
         requestToEdit,
@@ -187,11 +179,7 @@ export default function RequestFormPage({
   };
 
   const handleApprovalAction = async (
-    action:
-      | "APPROVED"
-      | "REJECTED"
-      | "REJECTED_WITH_EDIT"
-      | "FORWARDED"
+    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED",
   ) => {
     try {
       await performApprovalAction({
@@ -227,7 +215,6 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-
         {/* Download Button */}
         {requestToEdit && existingDocs.length > 0 && (
           <div className="flex justify-end mb-6">
@@ -257,17 +244,15 @@ export default function RequestFormPage({
           {isApprovalMode
             ? "Approval View"
             : isViewMode
-            ? "View Request"
-            : isEditMode
-            ? "Edit Request"
-            : "Create New Request"}
+              ? "View Request"
+              : isEditMode
+                ? "Edit Request"
+                : "Create New Request"}
         </h1>
 
         {/* TITLE */}
         <div className="mb-6">
-          <label className="block mb-2 font-medium text-gray-700">
-            Title
-          </label>
+          <label className="block mb-2 font-medium text-gray-700">Title</label>
           <input
             type="text"
             value={title}
@@ -311,97 +296,95 @@ export default function RequestFormPage({
               <p className="text-lg font-semibold text-gray-700">
                 Drag & Drop files here
               </p>
-              <p className="text-sm text-gray-500 mt-2">
-                or click to browse
-              </p>
+              <p className="text-sm text-gray-500 mt-2">or click to browse</p>
             </div>
           </div>
         )}
 
         {/* DOCUMENT PREVIEW */}
         {combinedDocs.length > 0 && (
-  <div className="mb-10">
-    <h2 className="text-lg font-semibold mb-4">Documents</h2>
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold mb-4">Documents</h2>
 
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-      {combinedDocs.map((item: any, index: number) => (
-        <div
-          key={index}
-          className="relative bg-gray-100 rounded-xl p-4 cursor-pointer"
-          onClick={() => {
-            if (
-              item.type === "existing" &&
-              isImageFile(item.file_name)
-            ) {
-              const existingIndex = existingDocs.findIndex(
-                (d) => d.id === item.id
-              );
-              if (existingIndex !== -1) {
-                setPreviewIndex(existingIndex);
-              }
-            }
-          }}
-        >
-          {/* DELETE BUTTON FOR NEW FILES */}
-          {item.type === "new" && canUpload && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                removeFile(item.index);
-              }}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
-            >
-              ✕
-            </button>
-          )}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {combinedDocs.map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className="relative bg-gray-100 rounded-xl p-4 cursor-pointer"
+                  onClick={() => {
+                    if (
+                      item.type === "existing" &&
+                      isImageFile(item.file_name)
+                    ) {
+                      const existingIndex = existingDocs.findIndex(
+                        (d) => d.id === item.id,
+                      );
+                      if (existingIndex !== -1) {
+                        setPreviewIndex(existingIndex);
+                      }
+                    }
+                  }}
+                >
+                  {/* DELETE BUTTON FOR NEW FILES */}
+                  {item.type === "new" && canUpload && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(item.index);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  )}
 
-          {/* DELETE BUTTON FOR EXISTING FILES */}
-          {item.type === "existing" && canDeleteExisting && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeletedDocIds((prev) => [...prev, item.id]);
-                setExistingDocs((prev) =>
-                  prev.filter((doc) => doc.id !== item.id)
-                );
-              }}
-              className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
-            >
-              ✕
-            </button>
-          )}
+                  {/* DELETE BUTTON FOR EXISTING FILES */}
+                  {item.type === "existing" && canDeleteExisting && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletedDocIds((prev) => [...prev, item.id]);
+                        setExistingDocs((prev) =>
+                          prev.filter((doc) => doc.id !== item.id),
+                        );
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center"
+                    >
+                      ✕
+                    </button>
+                  )}
 
-          {/* FILE PREVIEW */}
-          {item.type === "new" ? (
-            item.file.type.startsWith("image") ? (
-              <img
-                src={URL.createObjectURL(item.file)}
-                className="h-32 w-full object-cover rounded-lg"
-              />
-            ) : (
-              <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
-                📄 {item.file.name}
-              </div>
-            )
-          ) : isImageFile(item.file_name) ? (
-            <img
-              src={
-                supabase.storage
-                  .from("request-documents")
-                  .getPublicUrl(item.file_path).data.publicUrl
-              }
-              className="h-32 w-full object-cover rounded-lg"
-            />
-          ) : (
-            <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
-              📄 {item.file_name}
+                  {/* FILE PREVIEW */}
+                  {item.type === "new" ? (
+                    item.file.type.startsWith("image") ? (
+                      <img
+                        src={URL.createObjectURL(item.file)}
+                        className="h-32 w-full object-cover rounded-lg"
+                      />
+                    ) : (
+                      <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                        📄 {item.file.name}
+                      </div>
+                    )
+                  ) : isImageFile(item.file_name) ? (
+                    <img
+                      src={
+                        supabase.storage
+                          .from("request-documents")
+                          .getPublicUrl(item.file_path).data.publicUrl
+                      }
+                      className="h-32 w-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="h-32 flex items-center justify-center text-gray-600 text-sm text-center">
+                      📄 {item.file_name}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+          </div>
+        )}
 
         {/* APPROVAL COMMENT */}
         {isApprovalMode && (
@@ -435,27 +418,47 @@ export default function RequestFormPage({
                 Submit
               </button>
               <button
-  onClick={() => setShowSubmitForwardModal(true)}
-  disabled={loading !== null}
-  className="px-8 py-3 bg-indigo-600 text-white rounded-xl"
->
-  Submit To
-</button>
+                onClick={() => setShowSubmitForwardModal(true)}
+                disabled={loading !== null}
+                className="px-8 py-3 bg-indigo-600 text-white rounded-xl"
+              >
+                Assign
+              </button>
             </div>
           )}
 
           {isApprovalMode && (
             <div className="flex gap-3">
-              <button onClick={() => handleApprovalAction("APPROVED")} className="px-4 py-2 bg-green-600 text-white rounded-xl">Approve</button>
-              <button onClick={() => handleApprovalAction("REJECTED")} className="px-4 py-2 bg-red-600 text-white rounded-xl">Reject</button>
-              <button onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")} className="px-4 py-2 bg-yellow-600 text-white rounded-xl">Reject With Edit</button>
-              <button onClick={() => handleApprovalAction("FORWARDED")} className="px-4 py-2 bg-blue-600 text-white rounded-xl">Escalate</button>
               <button
-  onClick={() => setShowForwardModal(true)}
-  className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
->
-  Forward
-</button>
+                onClick={() => handleApprovalAction("APPROVED")}
+                className="px-4 py-2 bg-green-600 text-white rounded-xl"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleApprovalAction("REJECTED")}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl"
+              >
+                Reject
+              </button>
+              <button
+                onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
+              >
+                Reject With Edit
+              </button>
+              <button
+                onClick={() => handleApprovalAction("FORWARDED")}
+                className="px-4 py-2 bg-blue-600 text-white rounded-xl"
+              >
+                Escalate
+              </button>
+              <button
+                onClick={() => setShowForwardModal(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
+              >
+                Forward
+              </button>
             </div>
           )}
         </div>
@@ -479,55 +482,54 @@ export default function RequestFormPage({
         setPreviewIndex={setPreviewIndex}
       />
 
-          {showForwardModal && requestToEdit && (
-  <ForwardModal
-    requestId={requestToEdit.id}
-    currentUserEmail={currentUser.email}
-    department={department}
-    comment={comment}                 // 👈 PASS THIS
-    onClose={() => setShowForwardModal(false)}
-    onSuccess={() => {
-      onSuccess();
-      onBack();
-    }}
-  />
-)}
+      {showForwardModal && requestToEdit && (
+        <ForwardModal
+          requestId={requestToEdit.id}
+          currentUserEmail={currentUser.email}
+          department={department}
+          comment={comment} // 👈 PASS THIS
+          onClose={() => setShowForwardModal(false)}
+          onSuccess={() => {
+            onSuccess();
+            onBack();
+          }}
+        />
+      )}
 
-{showSubmitForwardModal && (
-  <ForwardModal
-    requestId={requestToEdit?.id}
-    currentUserEmail={currentUser.email}
-    department={department}
-    comment={comment}
-    onClose={() => setShowSubmitForwardModal(false)}
-    onSuccess={async (targetEmail: string) => {
-      try {
-        setLoading("submit");
+      {showSubmitForwardModal && (
+        <ForwardModal
+          requestId={requestToEdit?.id}
+          currentUserEmail={currentUser.email}
+          department={department}
+          comment={comment}
+          onClose={() => setShowSubmitForwardModal(false)}
+          onSuccess={async (targetEmail: string) => {
+            try {
+              setLoading("submit");
 
-        await saveRequestWithDocuments({
-          isEditMode,
-          requestToEdit,
-          title,
-          description,
-          files,
-          existingDocs,
-          deletedDocIds,
-          submit: true,
-          department,
-          nextApproverEmail: targetEmail,   // 👈 KEY PART
-        });
+              await saveRequestWithDocuments({
+                isEditMode,
+                requestToEdit,
+                title,
+                description,
+                files,
+                existingDocs,
+                deletedDocIds,
+                submit: true,
+                department,
+                nextApproverEmail: targetEmail, // 👈 KEY PART
+              });
 
-        onSuccess();
-        onBack();
-      } catch (err: any) {
-        alert(err.message || "Submit To failed");
-      } finally {
-        setLoading(null);
-      }
-    }}
-  />
-)}
-
+              onSuccess();
+              onBack();
+            } catch (err: any) {
+              alert(err.message || "Submit To failed");
+            } finally {
+              setLoading(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
