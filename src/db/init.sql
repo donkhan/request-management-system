@@ -17,7 +17,7 @@ CREATE TABLE department (
 );
 insert into department (name,head_email)
 values 
-('SSCS','routetokamil@gmail.com')
+('SSCS','routetokamil@gmail.com'),
 ('Accounting','accountant@cmr.edu.in'),
 ('VC-OFFICE','23f3004493@ds.study.iitm.ac.in');
 
