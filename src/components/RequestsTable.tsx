@@ -1,4 +1,4 @@
-import { timeAgo } from "../utils/timeUtils";
+import { getWaitingInfo } from "../utils/timeUtils";
 
 interface Request {
   id: string;
@@ -49,7 +49,7 @@ export default function RequestsTable({
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
               WAITING
             </th>
-            
+
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
               ACTION
             </th>
@@ -62,12 +62,13 @@ export default function RequestsTable({
               request.status === "DRAFT" ||
               request.status === "REJECTED_WITH_EDIT";
 
+            const waiting = getWaitingInfo(request.created_at);
+
             return (
               <tr
                 key={request.id}
                 className="border-t hover:bg-gray-50 transition"
               >
-
                 <td className="px-6 py-4 text-sm">
                   {request.title}
                 </td>
@@ -89,10 +90,49 @@ export default function RequestsTable({
                 <td className="px-6 py-4 text-sm">
                   {request.status}
                 </td>
-                <td>
-                  {timeAgo(request.created_at)}
+
+                <td className="px-6 py-4 text-sm">
+
+                  <span
+  className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 w-fit ${
+    waiting.level === 0
+      ? "bg-green-100 text-green-700"
+      : waiting.level === 1
+      ? "bg-emerald-100 text-emerald-700"
+      : waiting.level === 2
+      ? "bg-cyan-100 text-cyan-700"
+      : waiting.level === 3
+      ? "bg-blue-100 text-blue-700"
+      : waiting.level === 4
+      ? "bg-yellow-100 text-yellow-700"
+      : waiting.level === 5
+      ? "bg-orange-100 text-orange-700"
+      : "bg-red-100 text-red-700"
+  }`}
+>
+  <span
+    className={`w-4 h-4 rounded-full ${
+      waiting.level === 0
+        ? "bg-green-600"
+        : waiting.level === 1
+        ? "bg-emerald-600"
+        : waiting.level === 2
+        ? "bg-cyan-600"
+        : waiting.level === 3
+        ? "bg-blue-600"
+        : waiting.level === 4
+        ? "bg-yellow-500"
+        : waiting.level === 5
+        ? "bg-orange-500"
+        : "bg-red-600"
+    }`}
+  ></span>
+
+  {waiting.label}
+</span>
 
                 </td>
+
                 <td className="px-6 py-4 text-sm">
                   <div className="flex gap-4 items-center">
 
@@ -103,7 +143,6 @@ export default function RequestsTable({
                         title="Edit Request"
                         className="text-blue-600 hover:text-blue-800 transition"
                       >
-                        {/* Pencil Icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="w-5 h-5"
@@ -128,7 +167,6 @@ export default function RequestsTable({
                         title="View Request"
                         className="text-indigo-600 hover:text-indigo-800 transition"
                       >
-                        {/* Eye Icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="w-5 h-5"
