@@ -1,4 +1,4 @@
-# Request Management System
+# Request Management System - CMR University
 
 A workflow-based request management platform built with **React, Supabase, and Vercel** for managing institutional approvals digitally.
 
