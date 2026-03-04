@@ -1,3 +1,5 @@
+import { timeAgo } from "../utils/timeUtils";
+
 interface Request {
   id: string;
   title: string;
@@ -45,6 +47,10 @@ export default function RequestsTable({
               STATUS
             </th>
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
+              WAITING
+            </th>
+            
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
               ACTION
             </th>
           </tr>
@@ -83,7 +89,10 @@ export default function RequestsTable({
                 <td className="px-6 py-4 text-sm">
                   {request.status}
                 </td>
+                <td>
+                  {timeAgo(request.created_at)}
 
+                </td>
                 <td className="px-6 py-4 text-sm">
                   <div className="flex gap-4 items-center">
 
