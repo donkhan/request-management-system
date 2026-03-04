@@ -10,6 +10,7 @@ import {
   getMyDecisionHistory,
 } from "./services/requestService";
 import DecisionHistoryTable from "./components/DecisionHistoryTable";
+import RegistrationPage from "./components/RegistrationPage";
 import type { Request } from "./types";
 
 interface NormalizedUser {
@@ -36,17 +37,11 @@ export default function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // --------------------------------------------------
-  // Load Employee Profile
-  // --------------------------------------------------
   const loadEmployeeProfile = async (email: string) => {
     const profile = await fetchEmployeeProfile(email);
     setEmployeeProfile(profile);
   };
 
-  // --------------------------------------------------
-  // Fetch Dashboard Data
-  // --------------------------------------------------
   const fetchAllData = async (email: string) => {
     try {
       setIsRefreshing(true);
@@ -69,9 +64,6 @@ export default function App() {
     }
   };
 
-  // --------------------------------------------------
-  // Handle Login
-  // --------------------------------------------------
   const handleUserLogin = async (sessionUser: any) => {
     const email = sessionUser.email;
 
@@ -88,7 +80,6 @@ export default function App() {
     };
 
     setUser(normalizedUser);
-
     await loadEmployeeProfile(email);
     await fetchAllData(email);
   };
@@ -98,19 +89,18 @@ export default function App() {
   // --------------------------------------------------
   useEffect(() => {
     if (!user?.email) return;
-
     const interval = setInterval(() => {
       if (document.visibilityState === "visible") {
         fetchAllData(user.email);
       }
     }, 30000);
-
     return () => clearInterval(interval);
   }, [user?.email]);
 
   // --------------------------------------------------
   // Visibility Reset (Demo Lock Fix)
   // --------------------------------------------------
+  
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -139,49 +129,55 @@ export default function App() {
       );
     };
   }, []);
+  
 
   // --------------------------------------------------
-  // Auth Initialization
-  // --------------------------------------------------
-  useEffect(() => {
-    let isMounted = true;
+// Auth Initialization
+// --------------------------------------------------
+useEffect(() => {
+  let isMounted = true;
+  const supabase = getSupabase();
 
-    const initAuth = async () => {
-      const { data } = await getSupabase().auth.getSession();
+  const initAuth = async () => {
+    const { data } = await supabase.auth.getSession();
+    if (!isMounted) return;
+
+    if (data.session?.user) {
+      await handleUserLogin(data.session.user);
+    }
+  };
+
+  initAuth();
+
+  const { data: listener } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
       if (!isMounted) return;
 
-      if (data.session?.user) {
-        await handleUserLogin(data.session.user);
+      console.log("Auth Event:", event);
+
+      if (event === "SIGNED_IN" && session?.user) {
+        await handleUserLogin(session.user);
+        return;
       }
-    };
 
-    initAuth();
+      if (event === "SIGNED_OUT") {
+        setUser(null);
+        setEmployeeProfile(null);
+        setMyRequests([]);
+        setMyApprovals([]);
+        setMyDecisions([]);
+        setView("dashboard");
+        setSelectedRequest(null);
+        setLastUpdated(null);
+      }
+    }
+  );
 
-    const { data: listener } =
-      getSupabase().auth.onAuthStateChange(
-        async (_event, session) => {
-          if (!isMounted) return;
-
-          if (session?.user) {
-            await handleUserLogin(session.user);
-          } else {
-            setUser(null);
-            setEmployeeProfile(null);
-            setMyRequests([]);
-            setMyApprovals([]);
-            setMyDecisions([]);
-            setView("dashboard");
-            setSelectedRequest(null);
-            setLastUpdated(null);
-          }
-        }
-      );
-
-    return () => {
-      isMounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+  return () => {
+    isMounted = false;
+    listener.subscription.unsubscribe();
+  };
+}, []);
 
   const handleGoogleLogin = async () => {
     await loginWithGoogle();
@@ -211,7 +207,48 @@ export default function App() {
         </div>
       </div>
     );
+    
   }
+
+ if (!employeeProfile) {
+  return (
+    <RegistrationPage
+      user={user}
+      onRegistered={async () => {
+        if (user?.email) {
+          await loadEmployeeProfile(user.email);
+        }
+      }}
+    />
+  );
+}
+
+if (employeeProfile.status === "PENDING") {
+  return (
+    <div className="p-10 text-center">
+      <h2 className="text-xl font-semibold">
+        Registration Under Review
+      </h2>
+      <p className="mt-2 text-gray-600">
+        Your request has been sent to your department head.
+        Please wait for approval.
+      </p>
+    </div>
+  );
+}
+
+if (employeeProfile.status === "REJECTED") {
+  return (
+    <div className="p-10 text-center">
+      <h2 className="text-xl font-semibold text-red-600">
+        Registration Rejected
+      </h2>
+      <p className="mt-2 text-gray-600">
+        Please contact administrator.
+      </p>
+    </div>
+  );
+}
 
   // --------------------------------------------------
   // Main Layout

@@ -1,13 +1,24 @@
 
+CREATE TABLE role (
+  name text PRIMARY KEY
+);
+
+insert into role (name)
+values
+ ('FACULTY'),
+ ('DIRECTOR'),
+ ('PRO-VC'),
+ ('ACCOUNTANT');
+
+
 CREATE TABLE department (
   name text NOT NULL UNIQUE,
   head_email text
 );
 insert into department (name,head_email)
 values 
-('SSCS','routetokamil@gmail.com'),
-('SOM','rajat.kera@gmail.com'),
-('DEV','e.a@gmail.com'),
+('SSCS','routetokamil@gmail.com')
+('Accounting','accountant@cmr.edu.in'),
 ('VC-OFFICE','23f3004493@ds.study.iitm.ac.in');
 
 CREATE TABLE employee (
@@ -38,6 +49,7 @@ create table request (
   current_approver text  references employee(email),
   department text NOT NULL REFERENCES department(name),
   status text not null default 'Pending',
+  type text not null default 'OTHER',
   created_at timestamp with time zone default now()
 );
 

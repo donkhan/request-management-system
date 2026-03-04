@@ -3,3 +3,4 @@ drop table if exists document;
 drop table if exists request;
 drop table if exists employee;
 drop table if exists department;
+drop table if exists role;

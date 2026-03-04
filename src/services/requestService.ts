@@ -199,6 +199,17 @@ export async function performApprovalAction({
 }) {
   await requireComment(comment);
 
+  const supabase = db();
+
+  // 🔹 1️⃣ Get request type first
+  const { data: request, error: fetchError } = await supabase
+    .from("request")
+    .select("type, created_by")
+    .eq("id", requestId)
+    .single();
+
+  if (fetchError) throw fetchError;
+
   let nextApprover: string | null = null;
 
   if (action === "FORWARDED") {
@@ -209,13 +220,29 @@ export async function performApprovalAction({
     }
   }
 
+  // 🔹 2️⃣ Special Logic for Registration Requests
+  if (request.type === "NEW_EMPLOYEE_REGISTRATION") {
+    if (action === "APPROVED") {
+      await supabase
+        .from("employee")
+        .update({ status: "APPROVED" })
+        .eq("email", request.created_by);
+    }
+
+    if (action === "REJECTED") {
+      await supabase
+        .from("employee")
+        .delete()
+        .eq("email", request.created_by);
+    }
+  }
+
+  // 🔹 3️⃣ Normal Request Status Update
   const updateData = buildApprovalUpdate(
     action,
     createdBy,
     nextApprover
   );
-
-  const supabase = db();
 
   const { error } = await supabase
     .from("request")
@@ -224,6 +251,7 @@ export async function performApprovalAction({
 
   if (error) throw error;
 
+  // 🔹 4️⃣ Audit Log (unchanged)
   await supabase.from("audit_log").insert({
     request_id: requestId,
     action,
@@ -234,9 +262,6 @@ export async function performApprovalAction({
   });
 }
 
-/* =====================================================
-   DASHBOARD
-===================================================== */
 
 export async function getDashboardData(email: string) {
   const supabase = db();
