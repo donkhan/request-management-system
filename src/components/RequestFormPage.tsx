@@ -4,6 +4,7 @@ import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
 import {
   saveRequestWithDocuments,
   performApprovalAction,
+  deleteDraftRequest,
 } from "../services/requestService";
 
 import { fetchRequestDocuments } from "../services/documentService";
@@ -70,6 +71,7 @@ export default function RequestFormPage({
     (isNewRequest || (isOriginator && isEditableState));
 
   const canDeleteExisting = isOriginator && isEditableState;
+  const canDiscard = isEditMode && requestToEdit?.status === "DRAFT";
 
   useEffect(() => {
     if (!requestToEdit) return;
@@ -141,6 +143,23 @@ export default function RequestFormPage({
       alert(err.message || "Save draft failed");
     } finally {
       setLoading(null);
+    }
+  };
+
+  const handleDiscard = async () => {
+    const confirmed = confirm(
+      "Discard this draft? All uploaded documents will be deleted.",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deleteDraftRequest(requestToEdit.id, existingDocs || []);
+
+      onSuccess(); // refresh dashboard
+      onBack(); // go back
+    } catch (err: any) {
+      alert(err.message || "Failed to discard draft");
     }
   };
 
@@ -424,6 +443,14 @@ export default function RequestFormPage({
               >
                 Assign
               </button>
+              {canDiscard && (
+                <button
+                  onClick={handleDiscard}
+                  className="bg-gray-600 text-white px-5 py-2 rounded-lg hover:bg-gray-700"
+                >
+                  Discard Draft
+                </button>
+              )}
             </div>
           )}
 

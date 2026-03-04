@@ -343,3 +343,40 @@ export async function forwardRequestToUser({
 
   if (logError) throw logError;
 }
+
+export async function deleteDraftRequest(
+  requestId: string,
+  attachments: { file_path: string }[],
+) {
+  const supabase = db();
+
+  // 1. Delete files from storage
+  if (attachments?.length) {
+    const paths = attachments.map((f) => f.file_path);
+
+    const { error: storageError } = await supabase.storage
+      .from("request-documents")
+      .remove(paths);
+
+    if (storageError) throw storageError;
+  }
+
+  // 2. Delete document records
+  const { error: docError } = await supabase
+    .from("document")
+    .delete()
+    .eq("request_id", requestId);
+
+  if (docError) throw docError;
+
+  // 3. Delete audit logs (safety)
+  await supabase.from("audit_log").delete().eq("request_id", requestId);
+
+  // 4. Delete request itself
+  const { error: reqError } = await supabase
+    .from("request")
+    .delete()
+    .eq("id", requestId);
+
+  if (reqError) throw reqError;
+}
