@@ -27,12 +27,17 @@ export default function App() {
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
   const [myDecisions, setMyDecisions] = useState<any[]>([]);
 
+  const [showOnlyPending, setShowOnlyPending] = useState(false);
+
+  const filteredRequests = showOnlyPending
+    ? myRequests.filter((r) => r.status === "PENDING")
+    : myRequests;
+
   const [view, setView] = useState<
     "dashboard" | "create" | "approval" | "view"
   >("dashboard");
 
-  const [selectedRequest, setSelectedRequest] =
-    useState<Request | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<Request | null>(null);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -46,11 +51,9 @@ export default function App() {
     try {
       setIsRefreshing(true);
 
-      const { myRequests, myApprovals } =
-        await getDashboardData(email);
+      const { myRequests, myApprovals } = await getDashboardData(email);
 
-      const decisionHistory =
-        await getMyDecisionHistory(email);
+      const decisionHistory = await getMyDecisionHistory(email);
 
       setMyRequests(myRequests);
       setMyApprovals(myApprovals);
@@ -100,13 +103,11 @@ export default function App() {
   // --------------------------------------------------
   // Visibility Reset (Demo Lock Fix)
   // --------------------------------------------------
-  
+
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
-        console.warn(
-          "Tab resumed. Resetting Supabase state for demo."
-        );
+        console.warn("Tab resumed. Resetting Supabase state for demo.");
 
         Object.keys(localStorage).forEach((key) => {
           if (key.startsWith("sb-")) {
@@ -123,61 +124,57 @@ export default function App() {
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibility
-      );
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
-  
 
   // --------------------------------------------------
-// Auth Initialization
-// --------------------------------------------------
-useEffect(() => {
-  let isMounted = true;
-  const supabase = getSupabase();
+  // Auth Initialization
+  // --------------------------------------------------
+  useEffect(() => {
+    let isMounted = true;
+    const supabase = getSupabase();
 
-  const initAuth = async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!isMounted) return;
-
-    if (data.session?.user) {
-      await handleUserLogin(data.session.user);
-    }
-  };
-
-  initAuth();
-
-  const { data: listener } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
+    const initAuth = async () => {
+      const { data } = await supabase.auth.getSession();
       if (!isMounted) return;
 
-      console.log("Auth Event:", event);
-
-      if (event === "SIGNED_IN" && session?.user) {
-        await handleUserLogin(session.user);
-        return;
+      if (data.session?.user) {
+        await handleUserLogin(data.session.user);
       }
+    };
 
-      if (event === "SIGNED_OUT") {
-        setUser(null);
-        setEmployeeProfile(null);
-        setMyRequests([]);
-        setMyApprovals([]);
-        setMyDecisions([]);
-        setView("dashboard");
-        setSelectedRequest(null);
-        setLastUpdated(null);
-      }
-    }
-  );
+    initAuth();
 
-  return () => {
-    isMounted = false;
-    listener.subscription.unsubscribe();
-  };
-}, []);
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!isMounted) return;
+
+        console.log("Auth Event:", event);
+
+        if (event === "SIGNED_IN" && session?.user) {
+          await handleUserLogin(session.user);
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
+          setUser(null);
+          setEmployeeProfile(null);
+          setMyRequests([]);
+          setMyApprovals([]);
+          setMyDecisions([]);
+          setView("dashboard");
+          setSelectedRequest(null);
+          setLastUpdated(null);
+        }
+      },
+    );
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleGoogleLogin = async () => {
     await loginWithGoogle();
@@ -194,9 +191,7 @@ useEffect(() => {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-100">
         <div className="bg-white p-10 rounded-3xl shadow-xl text-center space-y-6">
-          <h1 className="text-2xl font-bold">
-            Request Management System
-          </h1>
+          <h1 className="text-2xl font-bold">Request Management System</h1>
 
           <button
             onClick={handleGoogleLogin}
@@ -207,48 +202,43 @@ useEffect(() => {
         </div>
       </div>
     );
-    
   }
 
- if (!employeeProfile) {
-  return (
-    <RegistrationPage
-      user={user}
-      onRegistered={async () => {
-        if (user?.email) {
-          await loadEmployeeProfile(user.email);
-        }
-      }}
-    />
-  );
-}
+  if (!employeeProfile) {
+    return (
+      <RegistrationPage
+        user={user}
+        onRegistered={async () => {
+          if (user?.email) {
+            await loadEmployeeProfile(user.email);
+          }
+        }}
+      />
+    );
+  }
 
-if (employeeProfile.status === "PENDING") {
-  return (
-    <div className="p-10 text-center">
-      <h2 className="text-xl font-semibold">
-        Registration Under Review
-      </h2>
-      <p className="mt-2 text-gray-600">
-        Your request has been sent to your department head.
-        Please wait for approval.
-      </p>
-    </div>
-  );
-}
+  if (employeeProfile.status === "PENDING") {
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-xl font-semibold">Registration Under Review</h2>
+        <p className="mt-2 text-gray-600">
+          Your request has been sent to your department head. Please wait for
+          approval.
+        </p>
+      </div>
+    );
+  }
 
-if (employeeProfile.status === "REJECTED") {
-  return (
-    <div className="p-10 text-center">
-      <h2 className="text-xl font-semibold text-red-600">
-        Registration Rejected
-      </h2>
-      <p className="mt-2 text-gray-600">
-        Please contact administrator.
-      </p>
-    </div>
-  );
-}
+  if (employeeProfile.status === "REJECTED") {
+    return (
+      <div className="p-10 text-center">
+        <h2 className="text-xl font-semibold text-red-600">
+          Registration Rejected
+        </h2>
+        <p className="mt-2 text-gray-600">Please contact administrator.</p>
+      </div>
+    );
+  }
 
   // --------------------------------------------------
   // Main Layout
@@ -263,9 +253,7 @@ if (employeeProfile.status === "REJECTED") {
             className="h-14 w-auto object-contain"
           />
           <div>
-            <div className="text-2xl font-semibold">
-              CMR University
-            </div>
+            <div className="text-2xl font-semibold">CMR University</div>
             <div className="text-sm text-gray-500">
               Request Management System
             </div>
@@ -273,10 +261,7 @@ if (employeeProfile.status === "REJECTED") {
         </div>
 
         <div className="flex items-center gap-5">
-          <UserProfileBadge
-            user={user}
-            employeeProfile={employeeProfile}
-          />
+          <UserProfileBadge user={user} employeeProfile={employeeProfile} />
           <button
             onClick={handleLogout}
             className="bg-red-500 text-white px-5 py-2 rounded-xl hover:bg-red-600 transition"
@@ -326,9 +311,7 @@ if (employeeProfile.status === "REJECTED") {
 
             <section>
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold">
-                  My Requests
-                </h2>
+                <h2 className="text-lg font-semibold">My Requests</h2>
 
                 <button
                   onClick={() => {
@@ -341,8 +324,17 @@ if (employeeProfile.status === "REJECTED") {
                 </button>
               </div>
 
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showOnlyPending}
+                  onChange={(e) => setShowOnlyPending(e.target.checked)}
+                />
+                Show Only Pending
+              </label>
+
               <RequestsTable
-                requests={myRequests}
+                requests={filteredRequests}
                 onEdit={(req) => {
                   setSelectedRequest(req);
                   setView("create");
@@ -355,9 +347,7 @@ if (employeeProfile.status === "REJECTED") {
             </section>
 
             <section>
-              <h2 className="text-lg font-semibold mb-6">
-                My Approvals
-              </h2>
+              <h2 className="text-lg font-semibold mb-6">My Approvals</h2>
 
               <RequestsTable
                 requests={myApprovals}
@@ -384,14 +374,12 @@ if (employeeProfile.status === "REJECTED") {
           </div>
         )}
 
-        {(view === "create" ||
-          view === "approval" ||
-          view === "view") && (
+        {(view === "create" || view === "approval" || view === "view") && (
           <RequestFormPage
             mode={view}
             requestToEdit={selectedRequest || undefined}
             currentUser={user}
-            department={employeeProfile?.department} 
+            department={employeeProfile?.department}
             onBack={() => {
               setView("dashboard");
               setSelectedRequest(null);
