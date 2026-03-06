@@ -478,7 +478,7 @@ export default function RequestFormPage({
                 onClick={() => handleApprovalAction("FORWARDED")}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl"
               >
-                Escalate
+                Recommend
               </button>
               <button
                 onClick={() => setShowForwardModal(true)}
