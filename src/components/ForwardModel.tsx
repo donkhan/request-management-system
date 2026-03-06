@@ -30,9 +30,7 @@ export default function ForwardModal({
   const [mode, setMode] = useState<"HEAD" | "USER">("HEAD");
 
   useEffect(() => {
-    getAllDepartments()
-      .then(setDepartments)
-      .catch(console.error);
+    getAllDepartments().then(setDepartments).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -55,14 +53,14 @@ export default function ForwardModal({
     return;
   }
 
-  // 🟦 SUBMIT TO FLOW (no mandatory comment)
-  if (typeof onSuccess === "function") {
+  // SUBMIT FLOW
+  if (!requestId) {
     onSuccess(targetEmail);
     onClose();
     return;
   }
 
-  // 🟩 APPROVAL FORWARD FLOW (comment required)
+  // APPROVAL FLOW
   if (!comment?.trim()) {
     alert("Comment is required");
     return;
@@ -76,6 +74,7 @@ export default function ForwardModal({
     comment,
   });
 
+  onSuccess();
   onClose();
 };
 

@@ -51,6 +51,7 @@ export default function RequestFormPage({
 
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [showSubmitForwardModal, setShowSubmitForwardModal] = useState(false);
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = getSupabase();
@@ -463,6 +464,27 @@ export default function RequestFormPage({
                 Approve
               </button>
               <button
+  onClick={async () => {
+    try {
+      await performApprovalAction({
+        requestId: requestToEdit.id,
+        action: "APPROVED",
+        comment,
+        currentUserEmail: currentUser.email,
+        createdBy: requestToEdit.created_by,
+        department,
+      });
+
+      setShowProcessingModal(true);
+    } catch (err: any) {
+      alert(err.message || "Approval failed");
+    }
+  }}
+  className="px-4 py-2 bg-teal-600 text-white rounded-xl"
+>
+  Approve & Send to Processing
+</button>
+              <button
                 onClick={() => handleApprovalAction("REJECTED")}
                 className="px-4 py-2 bg-red-600 text-white rounded-xl"
               >
@@ -557,6 +579,21 @@ export default function RequestFormPage({
           }}
         />
       )}
+
+
+      {showProcessingModal && requestToEdit && (
+  <ForwardModal
+    requestId={requestToEdit.id}
+    currentUserEmail={currentUser.email}
+    department={department} 
+    comment={comment}
+    onClose={() => setShowProcessingModal(false)}
+    onSuccess={() => {
+      onSuccess();
+      onBack();
+    }}
+  />
+)}
     </div>
   );
 }
