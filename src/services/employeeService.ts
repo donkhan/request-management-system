@@ -127,3 +127,47 @@ export async function registerEmployee({
 
   if (reqError) throw reqError;
 }
+
+export async function resolveApprover(userEmail: string): Promise<string | null> {
+  const supabase = getSupabase();
+
+  // 1️⃣ get employee department
+  const { data: emp, error: empError } = await supabase
+    .from("employee")
+    .select("department")
+    .eq("email", userEmail)
+    .single();
+
+  if (empError) throw empError;
+
+  const departmentName = emp.department;
+
+  // 2️⃣ get department
+  const { data: dept, error: deptError } = await supabase
+    .from("department")
+    .select("head_email,parent_department")
+    .eq("name", departmentName)
+    .single();
+
+  if (deptError) throw deptError;
+
+  // 3️⃣ if user is NOT head → send to head
+  if (dept.head_email !== userEmail) {
+    return dept.head_email;
+  }
+
+  // 4️⃣ if user IS head → go to parent department
+  if (!dept.parent_department) {
+    return null;
+  }
+
+  const { data: parentDept, error: parentError } = await supabase
+    .from("department")
+    .select("head_email")
+    .eq("name", dept.parent_department)
+    .single();
+
+  if (parentError) throw parentError;
+
+  return parentDept.head_email;
+}

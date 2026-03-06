@@ -1,5 +1,5 @@
 import { getSupabase } from "../supabase";
-import { getDepartmentHead } from "./employeeService";
+import { resolveApprover } from "./employeeService";
 import { deleteDocuments, uploadDocuments } from "./documentService";
 
 function db() {
@@ -26,7 +26,8 @@ async function resolveWorkflow(userEmail: string, submit: boolean) {
   if (!submit) {
     return { status: "DRAFT", approver: null };
   }
-  const approver = await getDepartmentHead(userEmail);
+
+  const approver = await resolveApprover(userEmail);
   return {
     status: "PENDING",
     approver,
@@ -153,7 +154,7 @@ export async function saveRequestWithDocuments({
 }
 
 function buildApprovalUpdate(
-  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED",
+  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED",
   createdBy: string,
   nextApprover?: string | null,
 ) {
@@ -170,7 +171,7 @@ function buildApprovalUpdate(
         current_approver: createdBy,
       };
 
-    case "FORWARDED":
+    case "RECOMMENDED":
       return {
         status: "PENDING",
         current_approver: nextApprover ?? null,
@@ -187,7 +188,7 @@ export async function performApprovalAction({
   department,
 }: {
   requestId: string;
-  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED";
+  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED";
   comment: string;
   currentUserEmail: string;
   createdBy: string;
@@ -208,11 +209,15 @@ export async function performApprovalAction({
 
   let nextApprover: string | null = null;
 
-  if (action === "FORWARDED") {
-    nextApprover = await getDepartmentHead(currentUserEmail);
+  if (action === "RECOMMENDED") {
+    nextApprover = await resolveApprover(currentUserEmail);
+
+    if (!nextApprover) {
+      throw new Error("No higher authority found.");
+    }
 
     if (nextApprover === currentUserEmail) {
-      throw new Error("Cannot forward to yourself.");
+      throw new Error("Cannot recommend to yourself.");
     }
   }
 
@@ -334,7 +339,7 @@ export async function forwardRequestToUser({
   // Insert audit log
   const { error: logError } = await supabase.from("audit_log").insert({
     request_id: requestId,
-    action: "FORWARDED",
+    action: "RECOMMENDED",
     acted_by: currentUserEmail,
     acted_to: newApproverEmail,
     department: department,

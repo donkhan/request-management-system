@@ -198,7 +198,7 @@ export default function RequestFormPage({
   };
 
   const handleApprovalAction = async (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "FORWARDED",
+    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED"
   ) => {
     try {
       await performApprovalAction({
@@ -475,7 +475,7 @@ export default function RequestFormPage({
                 Reject With Edit
               </button>
               <button
-                onClick={() => handleApprovalAction("FORWARDED")}
+                onClick={() => handleApprovalAction("RECOMMENDED")}
                 className="px-4 py-2 bg-blue-600 text-white rounded-xl"
               >
                 Recommend

@@ -7,19 +7,25 @@ insert into role (name)
 values
  ('FACULTY'),
  ('DIRECTOR'),
+ ('SOFTWARE DEVELOPER'),
  ('PRO-VC'),
  ('ACCOUNTANT');
 
 
 CREATE TABLE department (
   name text NOT NULL UNIQUE,
-  head_email text
+  head_email text,
+  parent_department text references department(name)
 );
-insert into department (name,head_email)
-values 
-('SSCS','routetokamil@gmail.com'),
-('Accounting','accountant@cmr.edu.in'),
-('VC-OFFICE','23f3004493@ds.study.iitm.ac.in');
+
+insert into department (name, head_email, parent_department)
+VALUES
+('VC-OFFICE','provc.praveen@cmr.edu.in',NULL),
+('SSCS','ashokkumar.t@cmr.edu.in','VC-OFFICE'),
+('ACCOUNTS','praveenkumar.r@cmr.edu.in','VC-OFFICE'),
+('TECH','routetokamil@gmail.com','VC-OFFICE');
+
+
 
 CREATE TABLE employee (
   email text PRIMARY KEY NOT NULL,
@@ -36,9 +42,11 @@ INSERT INTO employee (email, name, role, department,  status)
 VALUES
 ('provc.praveen@cmr.edu.in',  'Praveen',  'PROVC', 'VC-OFFICE',  'APPROVED'),
 ('ashokkumar.t@cmr.edu.in',   'Ashok Kumar', 'DIRECTOR', 'SSCS',  'APPROVED'),
-('kamil.k@cmr.edu.in',        'Kamil Khan A', 'FACULTY', 'SSCS',  'APPROVED'),
-('routetokamil@gmail.com',  'Kamil', 'DIRECTOR', 'VC-OFFICE',  'APPROVED'),
-('23f3004493@ds.study.iitm.ac.in',  'Student User', 'PROVC', 'VC-OFFICE', 'APPROVED');
+('kamil.k@cmr.edu.in',        'Kamil Khan A', 'SOFTWARE DEVELOPER', 'TECH',  'APPROVED'),
+('routetokamil@gmail.com',     'Kamil',       'DIRECTOR', 'TECH',  'APPROVED'),
+('23f3004493@ds.study.iitm.ac.in',  'ProVC DEMO', 'PROVC', 'VC-OFFICE', 'APPROVED')
+;
+
 
 
 create table request (
