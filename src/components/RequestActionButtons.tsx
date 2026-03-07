@@ -9,6 +9,7 @@ interface Props {
   handleSaveDraft: () => void;
   handleSubmit: () => void;
   handleDiscard: () => void;
+
   handleApprovalAction: (
     action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED",
   ) => void;
@@ -21,6 +22,10 @@ interface Props {
   currentUser: any;
   comment: string;
   department?: string;
+
+  handleDownloadAll: () => void;
+  isDownloading: boolean;
+  existingDocs: any[];
 }
 
 export default function RequestActionButtons({
@@ -39,11 +44,14 @@ export default function RequestActionButtons({
   currentUser,
   comment,
   department,
+  handleDownloadAll,
+  isDownloading,
+  existingDocs,
 }: Props) {
   return (
     <div className="flex justify-between mb-8">
       {!isApprovalMode && !isViewMode && (
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleSaveDraft}
             disabled={loading !== null}
@@ -80,7 +88,7 @@ export default function RequestActionButtons({
       )}
 
       {isApprovalMode && (
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-4 md:flex-row md:justify-between mb-8">
           <button
             onClick={() => handleApprovalAction("APPROVED")}
             className="px-4 py-2 bg-green-600 text-white rounded-xl"
@@ -137,6 +145,16 @@ export default function RequestActionButtons({
           >
             Forward
           </button>
+
+          {requestToEdit && existingDocs.length > 0 && (
+            <button
+              onClick={handleDownloadAll}
+              disabled={isDownloading}
+              className="px-4 py-2 bg-green-600 text-white rounded-xl"
+            >
+              {isDownloading ? "Preparing Download..." : "Download Attachments"}
+            </button>
+          )}
         </div>
       )}
     </div>

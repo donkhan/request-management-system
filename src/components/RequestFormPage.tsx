@@ -12,8 +12,6 @@ import {
 } from "../services/requestService";
 
 import { fetchRequestDocuments } from "../services/documentService";
-import ImageSlideshowModal from "../components/ImageSlideshowModal";
-import ForwardModal from "./ForwardModel";
 import AuditLog from "../components/AuditLog";
 import { getSupabase } from "../supabase";
 
@@ -239,21 +237,6 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-        {/* Download Button */}
-        {requestToEdit && existingDocs.length > 0 && (
-          <div className="flex justify-end mb-6">
-            <button
-              onClick={handleDownloadAll}
-              disabled={isDownloading}
-              className="px-5 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
-            >
-              {isDownloading
-                ? "Preparing Download..."
-                : "Download All Attachments"}
-            </button>
-          </div>
-        )}
-
         {/* TOP BACK */}
         <div className="flex justify-start mb-6">
           <button
@@ -302,25 +285,25 @@ export default function RequestFormPage({
 
         {/* FILE UPLOAD */}
         <DocumentUploader
-  canUpload={canUpload}
-  fileInputRef={fileInputRef}
-  handleFileChange={handleFileChange}
-  handleDrop={handleDrop}
-  openFileDialog={openFileDialog}
-/>
+          canUpload={canUpload}
+          fileInputRef={fileInputRef}
+          handleFileChange={handleFileChange}
+          handleDrop={handleDrop}
+          openFileDialog={openFileDialog}
+        />
 
         {/* DOCUMENT PREVIEW */}
         <DocumentPreviewGrid
-  combinedDocs={combinedDocs}
-  existingDocs={existingDocs}
-  canUpload={canUpload}
-  canDeleteExisting={canDeleteExisting}
-  removeFile={removeFile}
-  setDeletedDocIds={setDeletedDocIds}
-  setExistingDocs={setExistingDocs}
-  setPreviewIndex={setPreviewIndex}
-  isImageFile={isImageFile}
-/>
+          combinedDocs={combinedDocs}
+          existingDocs={existingDocs}
+          canUpload={canUpload}
+          canDeleteExisting={canDeleteExisting}
+          removeFile={removeFile}
+          setDeletedDocIds={setDeletedDocIds}
+          setExistingDocs={setExistingDocs}
+          setPreviewIndex={setPreviewIndex}
+          isImageFile={isImageFile}
+        />
 
         {/* APPROVAL COMMENT */}
         {isApprovalMode && (
@@ -340,6 +323,7 @@ export default function RequestFormPage({
           isViewMode={isViewMode}
           canDiscard={canDiscard}
           loading={loading}
+          handleDownloadAll={handleDownloadAll}
           handleSaveDraft={handleSaveDraft}
           handleSubmit={handleSubmit}
           handleDiscard={handleDiscard}
@@ -351,6 +335,9 @@ export default function RequestFormPage({
           currentUser={currentUser}
           comment={comment}
           department={department}
+          handleDownloadAll={handleDownloadAll}
+          isDownloading={isDownloading}
+          existingDocs={existingDocs}
         />
 
         {requestToEdit && <AuditLog requestId={requestToEdit.id} />}
@@ -367,37 +354,29 @@ export default function RequestFormPage({
       </div>
 
       <RequestModals
-  existingDocs={existingDocs}
-  previewIndex={previewIndex}
-  setPreviewIndex={setPreviewIndex}
-
-  showForwardModal={showForwardModal}
-  showSubmitForwardModal={showSubmitForwardModal}
-  showProcessingModal={showProcessingModal}
-
-  setShowForwardModal={setShowForwardModal}
-  setShowSubmitForwardModal={setShowSubmitForwardModal}
-  setShowProcessingModal={setShowProcessingModal}
-
-  requestToEdit={requestToEdit}
-  currentUser={currentUser}
-  department={department}
-  comment={comment}
-
-  onSuccess={onSuccess}
-  onBack={onBack}
-
-  setLoading={setLoading}
-
-  isEditMode={isEditMode}
-  title={title}
-  description={description}
-  files={files}
-  existingDocsState={existingDocs}
-  deletedDocIds={deletedDocIds}
-/>
-
-      
+        existingDocs={existingDocs}
+        previewIndex={previewIndex}
+        setPreviewIndex={setPreviewIndex}
+        showForwardModal={showForwardModal}
+        showSubmitForwardModal={showSubmitForwardModal}
+        showProcessingModal={showProcessingModal}
+        setShowForwardModal={setShowForwardModal}
+        setShowSubmitForwardModal={setShowSubmitForwardModal}
+        setShowProcessingModal={setShowProcessingModal}
+        requestToEdit={requestToEdit}
+        currentUser={currentUser}
+        department={department}
+        comment={comment}
+        onSuccess={onSuccess}
+        onBack={onBack}
+        setLoading={setLoading}
+        isEditMode={isEditMode}
+        title={title}
+        description={description}
+        files={files}
+        existingDocsState={existingDocs}
+        deletedDocIds={deletedDocIds}
+      />
     </div>
   );
 }
