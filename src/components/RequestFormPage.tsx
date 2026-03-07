@@ -5,6 +5,7 @@ import DocumentUploader from "../components/DocumentUploader";
 import DocumentPreviewGrid from "../components/DocumentPreviewGrid";
 import RequestModals from "../components/RequestModals";
 import RequestBasicFields from "../components/RequestBasicFields";
+import RequestHeader from "../components/RequestHeader";
 
 import {
   saveRequestWithDocuments,
@@ -158,8 +159,8 @@ export default function RequestFormPage({
     try {
       await deleteDraftRequest(requestToEdit.id, existingDocs || []);
 
-      onSuccess(); // refresh dashboard
-      onBack(); // go back
+      onSuccess();
+      onBack();
     } catch (err: any) {
       alert(err.message || "Failed to discard draft");
     }
@@ -168,6 +169,7 @@ export default function RequestFormPage({
   const handleSubmit = async () => {
     try {
       setLoading("submit");
+
       if (!title.trim()) {
         alert("Title is required.");
         return;
@@ -177,6 +179,7 @@ export default function RequestFormPage({
         alert("Description is required.");
         return;
       }
+
       await saveRequestWithDocuments({
         isEditMode,
         requestToEdit,
@@ -236,6 +239,7 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
+
         {/* TOP BACK */}
         <div className="flex justify-start mb-6">
           <button
@@ -246,81 +250,93 @@ export default function RequestFormPage({
           </button>
         </div>
 
-        <h1 className="text-3xl font-bold mb-8 text-gray-800">
-          {isApprovalMode
-            ? "Approval View"
-            : isViewMode
-              ? "View Request"
-              : isEditMode
-                ? "Edit Request"
-                : "Create New Request"}
-        </h1>
-
-        <RequestBasicFields
-          title={title}
-          description={description}
-          setTitle={setTitle}
-          setDescription={setDescription}
-          isReadOnly={isApprovalMode || isViewMode}
-        />
-
-        {/* FILE UPLOAD */}
-        <DocumentUploader
-          canUpload={canUpload}
-          fileInputRef={fileInputRef}
-          handleFileChange={handleFileChange}
-          handleDrop={handleDrop}
-          openFileDialog={openFileDialog}
-        />
-
-        {/* DOCUMENT PREVIEW */}
-        <DocumentPreviewGrid
-          combinedDocs={combinedDocs}
-          existingDocs={existingDocs}
-          canUpload={canUpload}
-          canDeleteExisting={canDeleteExisting}
-          removeFile={removeFile}
-          setDeletedDocIds={setDeletedDocIds}
-          setExistingDocs={setExistingDocs}
-          setPreviewIndex={setPreviewIndex}
-          isImageFile={isImageFile}
-        />
-
-        {/* APPROVAL COMMENT */}
-        {isApprovalMode && (
-          <div className="mb-8">
-            <textarea
-              rows={4}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              className="w-full border rounded-xl p-4"
-              placeholder="Enter mandatory comment..."
-            />
-          </div>
-        )}
-
-        <RequestActionButtons
+        <RequestHeader
           isApprovalMode={isApprovalMode}
           isViewMode={isViewMode}
-          canDiscard={canDiscard}
-          loading={loading}
-          handleDownloadAll={handleDownloadAll}
-          handleSaveDraft={handleSaveDraft}
-          handleSubmit={handleSubmit}
-          handleDiscard={handleDiscard}
-          handleApprovalAction={handleApprovalAction}
-          setShowForwardModal={setShowForwardModal}
-          setShowSubmitForwardModal={setShowSubmitForwardModal}
-          setShowProcessingModal={setShowProcessingModal}
+          isEditMode={isEditMode}
           requestToEdit={requestToEdit}
-          currentUser={currentUser}
-          comment={comment}
-          department={department}
-          isDownloading={isDownloading}
-          existingDocs={existingDocs}
         />
 
-        {requestToEdit && <AuditLog requestId={requestToEdit.id} />}
+        {/* TWO COLUMN LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* LEFT SIDE - FORM */}
+          <div className="lg:col-span-2">
+
+            <RequestBasicFields
+              title={title}
+              description={description}
+              setTitle={setTitle}
+              setDescription={setDescription}
+              isReadOnly={isApprovalMode || isViewMode}
+            />
+
+            <DocumentUploader
+              canUpload={canUpload}
+              fileInputRef={fileInputRef}
+              handleFileChange={handleFileChange}
+              handleDrop={handleDrop}
+              openFileDialog={openFileDialog}
+            />
+
+            <DocumentPreviewGrid
+              combinedDocs={combinedDocs}
+              existingDocs={existingDocs}
+              canUpload={canUpload}
+              canDeleteExisting={canDeleteExisting}
+              removeFile={removeFile}
+              setDeletedDocIds={setDeletedDocIds}
+              setExistingDocs={setExistingDocs}
+              setPreviewIndex={setPreviewIndex}
+              isImageFile={isImageFile}
+            />
+
+            {isApprovalMode && (
+              <div className="mb-8">
+                <textarea
+                  rows={4}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="w-full border rounded-xl p-4"
+                  placeholder="Enter mandatory comment..."
+                />
+              </div>
+            )}
+
+            <RequestActionButtons
+              isApprovalMode={isApprovalMode}
+              isViewMode={isViewMode}
+              canDiscard={canDiscard}
+              loading={loading}
+              handleDownloadAll={handleDownloadAll}
+              handleSaveDraft={handleSaveDraft}
+              handleSubmit={handleSubmit}
+              handleDiscard={handleDiscard}
+              handleApprovalAction={handleApprovalAction}
+              setShowForwardModal={setShowForwardModal}
+              setShowSubmitForwardModal={setShowSubmitForwardModal}
+              setShowProcessingModal={setShowProcessingModal}
+              requestToEdit={requestToEdit}
+              currentUser={currentUser}
+              comment={comment}
+              department={department}
+              isDownloading={isDownloading}
+              existingDocs={existingDocs}
+            />
+
+          </div>
+
+          {/* RIGHT SIDE - AUDIT LOG */}
+          <div className="lg:col-span-1">
+            {requestToEdit && (
+              <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6">
+                <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
+                <AuditLog requestId={requestToEdit.id} />
+              </div>
+            )}
+          </div>
+
+        </div>
 
         {/* BOTTOM BACK */}
         <div className="flex justify-start mt-8">
@@ -357,6 +373,7 @@ export default function RequestFormPage({
         existingDocsState={existingDocs}
         deletedDocIds={deletedDocIds}
       />
+
     </div>
   );
 }
