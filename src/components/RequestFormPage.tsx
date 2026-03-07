@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
+import RequestActionButtons from "../components/RequestActionButtons";
 
 import {
   saveRequestWithDocuments,
@@ -199,7 +200,7 @@ export default function RequestFormPage({
   };
 
   const handleApprovalAction = async (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED"
+    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED",
   ) => {
     try {
       await performApprovalAction({
@@ -419,98 +420,23 @@ export default function RequestFormPage({
           </div>
         )}
 
-        {/* BUTTONS */}
-        <div className="flex justify-between mb-8">
-          {!isApprovalMode && !isViewMode && (
-            <div className="flex gap-4">
-              <button
-                onClick={handleSaveDraft}
-                disabled={loading !== null}
-                className="px-6 py-3 bg-gray-500 text-white rounded-xl"
-              >
-                Save Draft
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={loading !== null}
-                className="px-8 py-3 bg-blue-600 text-white rounded-xl"
-              >
-                Submit
-              </button>
-              <button
-                onClick={() => setShowSubmitForwardModal(true)}
-                disabled={loading !== null}
-                className="px-8 py-3 bg-indigo-600 text-white rounded-xl"
-              >
-                Assign
-              </button>
-              {canDiscard && (
-                <button
-                  onClick={handleDiscard}
-                  className="bg-gray-600 text-white px-5 py-2 rounded-lg hover:bg-gray-700"
-                >
-                  Discard Draft
-                </button>
-              )}
-            </div>
-          )}
-
-          {isApprovalMode && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => handleApprovalAction("APPROVED")}
-                className="px-4 py-2 bg-green-600 text-white rounded-xl"
-              >
-                Approve
-              </button>
-              <button
-  onClick={async () => {
-    try {
-      await performApprovalAction({
-        requestId: requestToEdit.id,
-        action: "APPROVED",
-        comment,
-        currentUserEmail: currentUser.email,
-        createdBy: requestToEdit.created_by,
-        department,
-      });
-
-      setShowProcessingModal(true);
-    } catch (err: any) {
-      alert(err.message || "Approval failed");
-    }
-  }}
-  className="px-4 py-2 bg-teal-600 text-white rounded-xl"
->
-  Approve & Send to Processing
-</button>
-              <button
-                onClick={() => handleApprovalAction("REJECTED")}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl"
-              >
-                Reject
-              </button>
-              <button
-                onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
-              >
-                Reject With Edit
-              </button>
-              <button
-                onClick={() => handleApprovalAction("RECOMMENDED")}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl"
-              >
-                Recommend
-              </button>
-              <button
-                onClick={() => setShowForwardModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
-              >
-                Forward
-              </button>
-            </div>
-          )}
-        </div>
+        <RequestActionButtons
+          isApprovalMode={isApprovalMode}
+          isViewMode={isViewMode}
+          canDiscard={canDiscard}
+          loading={loading}
+          handleSaveDraft={handleSaveDraft}
+          handleSubmit={handleSubmit}
+          handleDiscard={handleDiscard}
+          handleApprovalAction={handleApprovalAction}
+          setShowForwardModal={setShowForwardModal}
+          setShowSubmitForwardModal={setShowSubmitForwardModal}
+          setShowProcessingModal={setShowProcessingModal}
+          requestToEdit={requestToEdit}
+          currentUser={currentUser}
+          comment={comment}
+          department={department}
+        />
 
         {requestToEdit && <AuditLog requestId={requestToEdit.id} />}
 
@@ -580,20 +506,19 @@ export default function RequestFormPage({
         />
       )}
 
-
       {showProcessingModal && requestToEdit && (
-  <ForwardModal
-    requestId={requestToEdit.id}
-    currentUserEmail={currentUser.email}
-    department={department} 
-    comment={comment}
-    onClose={() => setShowProcessingModal(false)}
-    onSuccess={() => {
-      onSuccess();
-      onBack();
-    }}
-  />
-)}
+        <ForwardModal
+          requestId={requestToEdit.id}
+          currentUserEmail={currentUser.email}
+          department={department}
+          comment={comment}
+          onClose={() => setShowProcessingModal(false)}
+          onSuccess={() => {
+            onSuccess();
+            onBack();
+          }}
+        />
+      )}
     </div>
   );
 }

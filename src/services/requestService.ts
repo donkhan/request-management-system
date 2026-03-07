@@ -154,11 +154,16 @@ export async function saveRequestWithDocuments({
 }
 
 function buildApprovalUpdate(
-  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED",
+  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED" | "COMPLETED",
   createdBy: string,
   nextApprover?: string | null,
 ) {
   switch (action) {
+    case "COMPLETED":
+      return {
+        status: "COMPLETED",
+        current_approver: null,
+      };
     case "APPROVED":
       return { status: "APPROVED", current_approver: null };
 
@@ -271,7 +276,6 @@ export async function getDashboardData(email: string) {
     .from("request")
     .select("*")
     .eq("current_approver", email)
-    .eq("status", "PENDING")
     .order("created_at", { ascending: false });
 
   if (apprError) throw apprError;
