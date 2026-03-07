@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
 import RequestActionButtons from "../components/RequestActionButtons";
+import DocumentUploader from "../components/DocumentUploader";
 
 import {
   saveRequestWithDocuments,
@@ -298,29 +299,13 @@ export default function RequestFormPage({
         </div>
 
         {/* FILE UPLOAD */}
-        {canUpload && (
-          <div className="mb-10">
-            <input
-              type="file"
-              multiple
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <div
-              onClick={openFileDialog}
-              onDrop={handleDrop}
-              onDragOver={(e) => e.preventDefault()}
-              className="border-2 border-dashed border-gray-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition"
-            >
-              <div className="text-5xl mb-4">📎</div>
-              <p className="text-lg font-semibold text-gray-700">
-                Drag & Drop files here
-              </p>
-              <p className="text-sm text-gray-500 mt-2">or click to browse</p>
-            </div>
-          </div>
-        )}
+        <DocumentUploader
+  canUpload={canUpload}
+  fileInputRef={fileInputRef}
+  handleFileChange={handleFileChange}
+  handleDrop={handleDrop}
+  openFileDialog={openFileDialog}
+/>
 
         {/* DOCUMENT PREVIEW */}
         {combinedDocs.length > 0 && (
