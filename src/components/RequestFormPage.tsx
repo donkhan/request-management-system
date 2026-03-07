@@ -3,6 +3,7 @@ import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
 import RequestActionButtons from "../components/RequestActionButtons";
 import DocumentUploader from "../components/DocumentUploader";
 import DocumentPreviewGrid from "../components/DocumentPreviewGrid";
+import RequestModals from "../components/RequestModals";
 
 import {
   saveRequestWithDocuments,
@@ -365,74 +366,38 @@ export default function RequestFormPage({
         </div>
       </div>
 
-      <ImageSlideshowModal
-        documents={existingDocs}
-        previewIndex={previewIndex}
-        setPreviewIndex={setPreviewIndex}
-      />
+      <RequestModals
+  existingDocs={existingDocs}
+  previewIndex={previewIndex}
+  setPreviewIndex={setPreviewIndex}
 
-      {showForwardModal && requestToEdit && (
-        <ForwardModal
-          requestId={requestToEdit.id}
-          currentUserEmail={currentUser.email}
-          department={department}
-          comment={comment} // 👈 PASS THIS
-          onClose={() => setShowForwardModal(false)}
-          onSuccess={() => {
-            onSuccess();
-            onBack();
-          }}
-        />
-      )}
+  showForwardModal={showForwardModal}
+  showSubmitForwardModal={showSubmitForwardModal}
+  showProcessingModal={showProcessingModal}
 
-      {showSubmitForwardModal && (
-        <ForwardModal
-          requestId={requestToEdit?.id}
-          currentUserEmail={currentUser.email}
-          department={department}
-          comment={comment}
-          onClose={() => setShowSubmitForwardModal(false)}
-          onSuccess={async (targetEmail: string) => {
-            try {
-              setLoading("submit");
+  setShowForwardModal={setShowForwardModal}
+  setShowSubmitForwardModal={setShowSubmitForwardModal}
+  setShowProcessingModal={setShowProcessingModal}
 
-              await saveRequestWithDocuments({
-                isEditMode,
-                requestToEdit,
-                title,
-                description,
-                files,
-                existingDocs,
-                deletedDocIds,
-                submit: true,
-                department,
-                nextApproverEmail: targetEmail, // 👈 KEY PART
-              });
+  requestToEdit={requestToEdit}
+  currentUser={currentUser}
+  department={department}
+  comment={comment}
 
-              onSuccess();
-              onBack();
-            } catch (err: any) {
-              alert(err.message || "Submit To failed");
-            } finally {
-              setLoading(null);
-            }
-          }}
-        />
-      )}
+  onSuccess={onSuccess}
+  onBack={onBack}
 
-      {showProcessingModal && requestToEdit && (
-        <ForwardModal
-          requestId={requestToEdit.id}
-          currentUserEmail={currentUser.email}
-          department={department}
-          comment={comment}
-          onClose={() => setShowProcessingModal(false)}
-          onSuccess={() => {
-            onSuccess();
-            onBack();
-          }}
-        />
-      )}
+  setLoading={setLoading}
+
+  isEditMode={isEditMode}
+  title={title}
+  description={description}
+  files={files}
+  existingDocsState={existingDocs}
+  deletedDocIds={deletedDocIds}
+/>
+
+      
     </div>
   );
 }
