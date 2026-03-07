@@ -4,6 +4,7 @@ import RequestActionButtons from "../components/RequestActionButtons";
 import DocumentUploader from "../components/DocumentUploader";
 import DocumentPreviewGrid from "../components/DocumentPreviewGrid";
 import RequestModals from "../components/RequestModals";
+import RequestBasicFields from "../components/RequestBasicFields";
 
 import {
   saveRequestWithDocuments,
@@ -13,7 +14,6 @@ import {
 
 import { fetchRequestDocuments } from "../services/documentService";
 import AuditLog from "../components/AuditLog";
-import { getSupabase } from "../supabase";
 
 interface Props {
   mode?: "create" | "edit" | "approval" | "view";
@@ -56,7 +56,6 @@ export default function RequestFormPage({
   const [showProcessingModal, setShowProcessingModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = getSupabase();
 
   const status = requestToEdit?.status?.toUpperCase();
 
@@ -257,31 +256,13 @@ export default function RequestFormPage({
                 : "Create New Request"}
         </h1>
 
-        {/* TITLE */}
-        <div className="mb-6">
-          <label className="block mb-2 font-medium text-gray-700">Title</label>
-          <input
-            type="text"
-            value={title}
-            readOnly={isApprovalMode || isViewMode}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full border rounded-xl p-4"
-          />
-        </div>
-
-        {/* DESCRIPTION */}
-        <div className="mb-8">
-          <label className="block mb-2 font-medium text-gray-700">
-            Description
-          </label>
-          <textarea
-            rows={5}
-            value={description}
-            readOnly={isApprovalMode || isViewMode}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full border rounded-xl p-4"
-          />
-        </div>
+        <RequestBasicFields
+          title={title}
+          description={description}
+          setTitle={setTitle}
+          setDescription={setDescription}
+          isReadOnly={isApprovalMode || isViewMode}
+        />
 
         {/* FILE UPLOAD */}
         <DocumentUploader
@@ -335,7 +316,6 @@ export default function RequestFormPage({
           currentUser={currentUser}
           comment={comment}
           department={department}
-          handleDownloadAll={handleDownloadAll}
           isDownloading={isDownloading}
           existingDocs={existingDocs}
         />
