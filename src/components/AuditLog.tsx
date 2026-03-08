@@ -3,6 +3,7 @@ import { fetchAuditLogs } from "../services/auditLogService";
 
 interface Props {
   requestId: string;
+  employeeMap: Record<string, string>;
 }
 
 interface AuditLogEntry {
@@ -15,7 +16,7 @@ interface AuditLogEntry {
   department: string;
 }
 
-export default function AuditLog({ requestId }: Props) {
+export default function AuditLog({ requestId, employeeMap }: Props) {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,6 +81,11 @@ export default function AuditLog({ requestId }: Props) {
     }
   };
 
+  const getName = (email?: string | null) => {
+    if (!email) return "—";
+    return employeeMap[email] ?? email;
+  };
+
   if (loading) {
     return (
       <div className="text-sm text-gray-500">Loading audit timeline...</div>
@@ -120,7 +126,8 @@ export default function AuditLog({ requestId }: Props) {
 
                 <div className="mt-2 text-sm text-gray-700 space-y-1">
                   <div>
-                    <span className="font-medium">From:</span> {log.acted_by}
+                    <span className="font-medium">From:</span>{" "}
+                    {getName(log.acted_by)}
                   </div>
 
                   {log.department && (
@@ -134,7 +141,8 @@ export default function AuditLog({ requestId }: Props) {
 
                   {log.acted_to && (
                     <div>
-                      <span className="font-medium">To:</span> {log.acted_to}
+                      <span className="font-medium">To:</span>{" "}
+                      {getName(log.acted_to)}
                     </div>
                   )}
 

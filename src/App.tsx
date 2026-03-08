@@ -29,7 +29,7 @@ export default function App() {
   const [myRequests, setMyRequests] = useState<Request[]>([]);
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
   const [myDecisions, setMyDecisions] = useState<any[]>([]);
-  const [employeeMap, setEmployeeMap] = useState<Record<string,string>>({});
+  const [employeeMap, setEmployeeMap] = useState<Record<string, string>>({});
 
   const [showOnlyPending, setShowOnlyPending] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -183,48 +183,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const loadEmployees = async () => {
+      const supabase = getSupabase();
 
-  const loadEmployees = async () => {
+      const { data } = await supabase
+        .from("employee")
+        .select("email,name")
+        .eq("status", "APPROVED");
 
-    const supabase = getSupabase();
+      const map: Record<string, string> = {};
 
-    const { data } = await supabase
-      .from("employee")
-      .select("email,name")
-      .eq("status","APPROVED");
+      data?.forEach((emp) => {
+        map[emp.email] = emp.name;
+      });
 
-    const map: Record<string,string> = {};
-
-    data?.forEach((emp) => {
-      map[emp.email] = emp.name;
-    });
-
-    setEmployeeMap(map);
-
-  };
-
-  loadEmployees();
-
-}, []);
-
-  const handleLogin = async (email?: string) => {
-
-  if (import.meta.env.DEV && email) {
-
-    const fakeUser = {
-      email,
-      user_metadata: {
-        name: email,
-        full_name: email,
-      },
+      setEmployeeMap(map);
     };
 
-    await handleUserLogin(fakeUser);
-    return;
-  }
+    loadEmployees();
+  }, []);
 
-  await loginWithGoogle();
-};
+  const handleLogin = async (email?: string) => {
+    if (import.meta.env.DEV && email) {
+      const fakeUser = {
+        email,
+        user_metadata: {
+          name: email,
+          full_name: email,
+        },
+      };
+
+      await handleUserLogin(fakeUser);
+      return;
+    }
+
+    await loginWithGoogle();
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -446,6 +440,7 @@ export default function App() {
             requestToEdit={selectedRequest || undefined}
             currentUser={user}
             department={employeeProfile?.department}
+            employeeMap={employeeMap}
             onBack={() => {
               setView("dashboard");
               setSelectedRequest(null);

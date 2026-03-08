@@ -25,6 +25,7 @@ interface Props {
     role?: string;
   };
   department?: string;
+  employeeMap: Record<string, string>;
   onBack: () => void;
   onSuccess: () => void;
 }
@@ -34,6 +35,7 @@ export default function RequestFormPage({
   requestToEdit,
   currentUser,
   department,
+  employeeMap,
   onBack,
   onSuccess,
 }: Props) {
@@ -241,7 +243,6 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-
         {/* TOP BACK */}
         <div className="flex justify-start mb-6">
           <button
@@ -261,10 +262,8 @@ export default function RequestFormPage({
 
         {/* TWO COLUMN LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
           {/* LEFT SIDE - FORM */}
           <div className="lg:col-span-2">
-
             <RequestBasicFields
               title={title}
               description={description}
@@ -325,7 +324,6 @@ export default function RequestFormPage({
               isDownloading={isDownloading}
               existingDocs={existingDocs}
             />
-
           </div>
 
           {/* RIGHT SIDE - AUDIT LOG */}
@@ -333,11 +331,13 @@ export default function RequestFormPage({
             {requestToEdit && (
               <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6">
                 <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
-                <AuditLog requestId={requestToEdit.id} />
+                <AuditLog
+                  requestId={requestToEdit.id}
+                  employeeMap={employeeMap}
+                />
               </div>
             )}
           </div>
-
         </div>
 
         {/* BOTTOM BACK */}
@@ -375,7 +375,6 @@ export default function RequestFormPage({
         existingDocsState={existingDocs}
         deletedDocIds={deletedDocIds}
       />
-
     </div>
   );
 }
