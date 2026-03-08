@@ -323,27 +323,40 @@ export async function forwardRequestToUser({
   currentUserEmail,
   department,
   comment,
+  action = "RECOMMENDED",
 }: {
   requestId: string;
   newApproverEmail: string;
   currentUserEmail: string;
   department?: string;
   comment?: string;
+  action?: "RECOMMENDED" | "PROCESSING";
 }) {
   const supabase = getSupabase();
 
-  // Update current approver
-  const { error: updateError } = await supabase
-    .from("request")
-    .update({ current_approver: newApproverEmail })
-    .eq("id", requestId);
+  let updateData;
 
+if (action === "PROCESSING") {
+  updateData = {
+    status: "PROCESSING",
+    current_approver: newApproverEmail,
+  };
+} else {
+  updateData = {
+    current_approver: newApproverEmail,
+  };
+}
+
+const { error: updateError } = await supabase
+  .from("request")
+  .update(updateData)
+  .eq("id", requestId);
   if (updateError) throw updateError;
 
   // Insert audit log
   const { error: logError } = await supabase.from("audit_log").insert({
     request_id: requestId,
-    action: "RECOMMENDED",
+    action: action,
     acted_by: currentUserEmail,
     acted_to: newApproverEmail,
     department: department,
