@@ -17,6 +17,36 @@ interface Props {
   onView?: (request: Request) => void;
 }
 
+function getDisplayStatus(status: string) {
+  switch (status) {
+    case "PROCESSING":
+      return "APPROVED (PROCESSING)";
+    case "COMPLETED":
+      return "APPROVED (PROCESSED)";
+    default:
+      return status;
+  }
+}
+
+function getStatusColor(status: string) {
+  switch (status) {
+    case "APPROVED":
+      return "bg-green-100 text-green-700";
+    case "PROCESSING":
+      return "bg-blue-100 text-blue-700";
+    case "COMPLETED":
+      return "bg-gray-200 text-gray-700";
+    case "REJECTED":
+      return "bg-red-100 text-red-700";
+    case "PENDING":
+      return "bg-yellow-100 text-yellow-700";
+    case "DRAFT":
+      return "bg-gray-100 text-gray-600";
+    default:
+      return "bg-gray-100 text-gray-700";
+  }
+}
+
 export default function RequestsTable({ requests, onEdit, onView }: Props) {
   if (!requests || requests.length === 0) {
     return <div>No requests found.</div>;
@@ -45,7 +75,6 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
               WAITING
             </th>
-
             <th className="px-6 py-3 text-left text-sm font-semibold text-gray-600">
               ACTION
             </th>
@@ -81,8 +110,18 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                   {request.current_approver || "-"}
                 </td>
 
-                <td className="px-6 py-4 text-sm">{request.status}</td>
+                {/* STATUS */}
+                <td className="px-6 py-4 text-sm">
+                  <span
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${getStatusColor(
+                      request.status
+                    )}`}
+                  >
+                    {getDisplayStatus(request.status)}
+                  </span>
+                </td>
 
+                {/* WAITING */}
                 <td className="px-6 py-4 text-sm">
                   <span
                     className={`px-3 py-1 rounded-lg text-xs font-medium flex items-center gap-2 w-fit ${
@@ -123,9 +162,9 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                   </span>
                 </td>
 
+                {/* ACTION */}
                 <td className="px-6 py-4 text-sm">
                   <div className="flex gap-4 items-center">
-                    {/* EDIT ICON */}
                     {canEdit && onEdit && (
                       <button
                         onClick={() => onEdit(request)}
@@ -149,7 +188,6 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                       </button>
                     )}
 
-                    {/* VIEW ICON */}
                     {!canEdit && onView && (
                       <button
                         onClick={() => onView(request)}

@@ -78,6 +78,7 @@ export default function RequestModals({
           currentUserEmail={currentUser.email}
           department={department}
           comment={comment}
+          action="RECOMMENDED"
           onClose={() => setShowForwardModal(false)}
           onSuccess={() => {
             onSuccess();
@@ -128,6 +129,7 @@ export default function RequestModals({
           currentUserEmail={currentUser.email}
           department={department}
           comment={comment}
+          action="PROCESSING"
           onClose={() => setShowProcessingModal(false)}
           onSuccess={() => {
             onSuccess();

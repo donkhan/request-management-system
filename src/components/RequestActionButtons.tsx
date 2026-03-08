@@ -11,7 +11,12 @@ interface Props {
   handleDiscard: () => void;
 
   handleApprovalAction: (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED",
+    action:
+      | "APPROVED"
+      | "REJECTED"
+      | "REJECTED_WITH_EDIT"
+      | "RECOMMENDED"
+      | "COMPLETED"
   ) => void;
 
   setShowForwardModal: (v: boolean) => void;
@@ -48,8 +53,14 @@ export default function RequestActionButtons({
   isDownloading,
   existingDocs,
 }: Props) {
+
+  const status = requestToEdit?.status;
+  const isProcessingStage = status === "PROCESSING";
+
   return (
     <div className="flex justify-between mb-8">
+
+      {/* CREATE / EDIT MODE */}
       {!isApprovalMode && !isViewMode && (
         <div className="flex flex-wrap gap-3">
           <button
@@ -87,51 +98,59 @@ export default function RequestActionButtons({
         </div>
       )}
 
+      {/* APPROVAL / PROCESSING MODE */}
       {isApprovalMode && (
         <div className="flex flex-col gap-4 md:flex-row md:justify-between mb-8">
-          <button
-            onClick={() => handleApprovalAction("APPROVED")}
-            className="px-4 py-2 bg-green-600 text-white rounded-xl"
-          >
-            Approve
-          </button>
 
-          <button
-            onClick={async () => {
-              try {
-                await performApprovalAction({
-                  requestId: requestToEdit.id,
-                  action: "APPROVED",
-                  comment,
-                  currentUserEmail: currentUser.email,
-                  createdBy: requestToEdit.created_by,
-                  department,
-                });
+          {/* APPROVAL BUTTONS (hidden during processing) */}
+          {!isProcessingStage && (
+            <>
+              <button
+                onClick={() => handleApprovalAction("APPROVED")}
+                className="px-4 py-2 bg-green-600 text-white rounded-xl"
+              >
+                Approve
+              </button>
 
-                setShowProcessingModal(true);
-              } catch (err: any) {
-                alert(err.message || "Approval failed");
-              }
-            }}
-            className="px-4 py-2 bg-teal-600 text-white rounded-xl"
-          >
-            Approve & Send to Processing
-          </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await performApprovalAction({
+                      requestId: requestToEdit.id,
+                      action: "APPROVED",
+                      comment,
+                      currentUserEmail: currentUser.email,
+                      createdBy: requestToEdit.created_by,
+                      department,
+                    });
 
-          <button
-            onClick={() => handleApprovalAction("REJECTED")}
-            className="px-4 py-2 bg-red-600 text-white rounded-xl"
-          >
-            Reject
-          </button>
+                    setShowProcessingModal(true);
+                  } catch (err: any) {
+                    alert(err.message || "Approval failed");
+                  }
+                }}
+                className="px-4 py-2 bg-teal-600 text-white rounded-xl"
+              >
+                Approve & Send to Processing
+              </button>
 
-          <button
-            onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
-            className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
-          >
-            Reject With Edit
-          </button>
+              <button
+                onClick={() => handleApprovalAction("REJECTED")}
+                className="px-4 py-2 bg-red-600 text-white rounded-xl"
+              >
+                Reject
+              </button>
 
+              <button
+                onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
+              >
+                Reject With Edit
+              </button>
+            </>
+          )}
+
+          {/* RECOMMEND (allowed even during processing) */}
           <button
             onClick={() => handleApprovalAction("RECOMMENDED")}
             className="px-4 py-2 bg-blue-600 text-white rounded-xl"
@@ -139,13 +158,27 @@ export default function RequestActionButtons({
             Recommend
           </button>
 
-          <button
-            onClick={() => setShowForwardModal(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
-          >
-            Forward
-          </button>
+          {/* FORWARD (not during processing) */}
+          {!isProcessingStage && (
+            <button
+              onClick={() => setShowForwardModal(true)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
+            >
+              Forward
+            </button>
+          )}
 
+          {/* COMPLETE (only during processing) */}
+          {isProcessingStage && (
+            <button
+              onClick={() => handleApprovalAction("COMPLETED")}
+              className="px-4 py-2 bg-gray-700 text-white rounded-xl"
+            >
+              Complete
+            </button>
+          )}
+
+          {/* DOWNLOAD */}
           {requestToEdit && existingDocs.length > 0 && (
             <button
               onClick={handleDownloadAll}
@@ -155,6 +188,7 @@ export default function RequestActionButtons({
               {isDownloading ? "Preparing Download..." : "Download Attachments"}
             </button>
           )}
+
         </div>
       )}
     </div>

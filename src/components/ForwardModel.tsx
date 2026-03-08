@@ -11,6 +11,7 @@ interface Props {
   currentUserEmail: string;
   department?: string;
   comment?: string;
+  action?: "RECOMMENDED" | "PROCESSING";
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -20,6 +21,7 @@ export default function ForwardModal({
   currentUserEmail,
   department,
   comment,
+  action = "RECOMMENDED",
   onClose,
   onSuccess,
 }: Props) {
@@ -72,6 +74,7 @@ export default function ForwardModal({
     currentUserEmail,
     department,
     comment,
+    action,
   });
 
   onSuccess();
