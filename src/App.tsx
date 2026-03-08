@@ -7,6 +7,7 @@ import { loginWithGoogle, logout } from "./services/authService";
 import { fetchEmployeeProfile } from "./services/employeeService";
 import LoginPage from "./components/LoginPage";
 import HelpPage from "./components/HelpPage";
+import HierarchyPage from "./components/HierarchyPage";
 import {
   getDashboardData,
   getMyDecisionHistory,
@@ -31,6 +32,7 @@ export default function App() {
 
   const [showOnlyPending, setShowOnlyPending] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showHierarchy, setShowHierarchy] = useState(false);
 
   const filteredRequests = showOnlyPending
     ? myRequests.filter((r) => r.status === "PENDING")
@@ -294,6 +296,13 @@ export default function App() {
               </div>
 
               <button
+                onClick={() => setShowHierarchy(true)}
+                className="px-4 py-2 bg-gray-200 rounded-xl hover:bg-gray-300"
+              >
+                Hierarchy
+              </button>
+
+              <button
                 onClick={() => user && fetchAllData(user.email)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition"
               >
@@ -428,6 +437,22 @@ export default function App() {
             </button>
 
             <HelpPage />
+          </div>
+        </div>
+      )}
+
+      {/* Hierarchy Popup */}
+      {showHierarchy && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white max-h-[90vh] overflow-auto rounded-2xl shadow-xl relative w-[90%] max-w-6xl">
+            <button
+              onClick={() => setShowHierarchy(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl"
+            >
+              ✕
+            </button>
+
+            <HierarchyPage />
           </div>
         </div>
       )}
