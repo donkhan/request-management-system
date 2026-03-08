@@ -13,11 +13,17 @@ interface Request {
 
 interface Props {
   requests: Request[];
+  employeeMap: Record<string, string>;
   onEdit?: (request: Request) => void;
   onView?: (request: Request) => void;
 }
 
-export default function RequestsTable({ requests, onEdit, onView }: Props) {
+export default function RequestsTable({
+  requests,
+  employeeMap,
+  onEdit,
+  onView,
+}: Props) {
   if (!requests || requests.length === 0) {
     return <div>No requests found.</div>;
   }
@@ -60,16 +66,16 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
               request.status === "REJECTED_WITH_EDIT";
 
             const isActive =
-              request.status === "PENDING" ||
-              request.status === "PROCESSING";
+              request.status === "PENDING" || request.status === "PROCESSING";
 
             const waiting = isActive
               ? getWaitingInfo(request.created_at)
               : null;
 
-            const approverName =
-              request.current_approver?.split("@")[0] || "";
-
+            const approverName = request.current_approver
+              ? (employeeMap[request.current_approver] ??
+                request.current_approver)
+              : "";
             return (
               <tr
                 key={request.id}
@@ -84,7 +90,9 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                 </td>
 
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {request.created_by || "-"}
+                  {request.created_by
+                    ? (employeeMap[request.created_by] ?? request.created_by)
+                    : "-"}
                 </td>
 
                 <td className="px-6 py-4 text-sm">
@@ -93,19 +101,19 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                       request.status === "APPROVED"
                         ? "bg-green-100 text-green-700"
                         : request.status === "REJECTED"
-                        ? "bg-red-100 text-red-700"
-                        : request.status === "PROCESSING"
-                        ? "bg-blue-100 text-blue-700"
-                        : request.status === "COMPLETED"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
+                          ? "bg-red-100 text-red-700"
+                          : request.status === "PROCESSING"
+                            ? "bg-blue-100 text-blue-700"
+                            : request.status === "COMPLETED"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
                     {request.status === "PROCESSING"
                       ? "APPROVED & BEING PROCESSED"
                       : request.status === "COMPLETED"
-                      ? "APPROVED & PROCESSED"
-                      : request.status}
+                        ? "APPROVED & PROCESSED"
+                        : request.status}
                   </span>
                 </td>
 
@@ -121,16 +129,16 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                           waiting.level === 0
                             ? "bg-green-100 text-green-700"
                             : waiting.level === 1
-                            ? "bg-emerald-100 text-emerald-700"
-                            : waiting.level === 2
-                            ? "bg-cyan-100 text-cyan-700"
-                            : waiting.level === 3
-                            ? "bg-blue-100 text-blue-700"
-                            : waiting.level === 4
-                            ? "bg-yellow-100 text-yellow-700"
-                            : waiting.level === 5
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-red-100 text-red-700"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : waiting.level === 2
+                                ? "bg-cyan-100 text-cyan-700"
+                                : waiting.level === 3
+                                  ? "bg-blue-100 text-blue-700"
+                                  : waiting.level === 4
+                                    ? "bg-yellow-100 text-yellow-700"
+                                    : waiting.level === 5
+                                      ? "bg-orange-100 text-orange-700"
+                                      : "bg-red-100 text-red-700"
                         }`}
                       >
                         <span
@@ -138,16 +146,16 @@ export default function RequestsTable({ requests, onEdit, onView }: Props) {
                             waiting.level === 0
                               ? "bg-green-600"
                               : waiting.level === 1
-                              ? "bg-emerald-600"
-                              : waiting.level === 2
-                              ? "bg-cyan-600"
-                              : waiting.level === 3
-                              ? "bg-blue-600"
-                              : waiting.level === 4
-                              ? "bg-yellow-500"
-                              : waiting.level === 5
-                              ? "bg-orange-500"
-                              : "bg-red-600"
+                                ? "bg-emerald-600"
+                                : waiting.level === 2
+                                  ? "bg-cyan-600"
+                                  : waiting.level === 3
+                                    ? "bg-blue-600"
+                                    : waiting.level === 4
+                                      ? "bg-yellow-500"
+                                      : waiting.level === 5
+                                        ? "bg-orange-500"
+                                        : "bg-red-600"
                           }`}
                         ></span>
 

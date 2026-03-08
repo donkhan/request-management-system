@@ -128,6 +128,7 @@ export default function RequestFormPage({
       setLoading("draft");
 
       await saveRequestWithDocuments({
+        currentUserEmail: currentUser.email,
         isEditMode,
         requestToEdit,
         title,
@@ -181,6 +182,7 @@ export default function RequestFormPage({
       }
 
       await saveRequestWithDocuments({
+        currentUserEmail: currentUser.email,
         isEditMode,
         requestToEdit,
         title,

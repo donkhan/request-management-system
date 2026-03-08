@@ -29,6 +29,7 @@ export default function App() {
   const [myRequests, setMyRequests] = useState<Request[]>([]);
   const [myApprovals, setMyApprovals] = useState<Request[]>([]);
   const [myDecisions, setMyDecisions] = useState<any[]>([]);
+  const [employeeMap, setEmployeeMap] = useState<Record<string,string>>({});
 
   const [showOnlyPending, setShowOnlyPending] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
@@ -180,6 +181,31 @@ export default function App() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+
+  const loadEmployees = async () => {
+
+    const supabase = getSupabase();
+
+    const { data } = await supabase
+      .from("employee")
+      .select("email,name")
+      .eq("status","APPROVED");
+
+    const map: Record<string,string> = {};
+
+    data?.forEach((emp) => {
+      map[emp.email] = emp.name;
+    });
+
+    setEmployeeMap(map);
+
+  };
+
+  loadEmployees();
+
+}, []);
 
   const handleLogin = async (email?: string) => {
 
@@ -372,6 +398,7 @@ export default function App() {
 
               <RequestsTable
                 requests={filteredRequests}
+                employeeMap={employeeMap}
                 onEdit={(req) => {
                   setSelectedRequest(req);
                   setView("create");
@@ -388,6 +415,7 @@ export default function App() {
 
               <RequestsTable
                 requests={myApprovals}
+                employeeMap={employeeMap}
                 onView={(req) => {
                   setSelectedRequest(req);
                   setView("approval");
@@ -402,6 +430,7 @@ export default function App() {
 
               <DecisionHistoryTable
                 decisions={myDecisions}
+                employeeMap={employeeMap}
                 onView={(req) => {
                   setSelectedRequest(req);
                   setView("view");

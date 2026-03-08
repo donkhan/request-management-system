@@ -2,11 +2,13 @@ import type { DecisionRow } from "../types";
 
 interface Props {
   decisions: DecisionRow[];
+  employeeMap: Record<string, string>;
   onView: (request: Request) => void;
 }
 
 export default function DecisionHistoryTable({
   decisions,
+  employeeMap,
   onView,
 }: Props) {
   if (!decisions?.length) {
@@ -45,7 +47,9 @@ export default function DecisionHistoryTable({
                 </td>
 
                 <td className="px-6 py-4 text-gray-600">
-                  {request?.created_by ?? "-"}
+                  {request.created_by
+                    ? (employeeMap[request.created_by] ?? request.created_by)
+                    : "-"}
                 </td>
 
                 <td className="px-6 py-4">

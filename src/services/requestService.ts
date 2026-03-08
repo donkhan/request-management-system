@@ -83,6 +83,7 @@ async function updateRequest(
 }
 
 export async function saveRequestWithDocuments({
+  currentUserEmail,
   isEditMode,
   requestToEdit,
   title,
@@ -94,7 +95,7 @@ export async function saveRequestWithDocuments({
   department,
   nextApproverEmail,
 }: any) {
-  const userEmail = await getCurrentUserEmail();
+  const userEmail = currentUserEmail;
 
   const workflow = await resolveWorkflow(userEmail, submit);
 
