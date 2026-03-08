@@ -42,34 +42,63 @@ export default function HierarchyPage() {
   const getChildren = (dept: string) =>
     departments.filter((d) => d.parent_department === dept);
 
+  const getEmployeeByEmail = (email: string | null) =>
+    employees.find((e) => e.email === email);
+
   const renderDept = (dept: Department) => {
     const children = getChildren(dept.name);
-    const staff = getEmployees(dept.name);
+    const head = getEmployeeByEmail(dept.head_email);
+
+    // hide head from employee list
+    const staff = getEmployees(dept.name).filter(
+      (e) => e.email !== dept.head_email
+    );
 
     return (
       <div key={dept.name} className="flex flex-col items-center">
 
         {/* Department Box */}
-        <div className="bg-blue-100 border border-blue-300 rounded-xl px-6 py-4 shadow text-center min-w-[180px]">
-          <div className="font-semibold">{dept.name}</div>
+        <div className="bg-blue-100 border border-blue-300 rounded-xl px-6 py-4 shadow text-center min-w-[220px]">
 
-          {dept.head_email && (
-            <div className="text-xs text-gray-600 mt-1">
-              👑 {dept.head_email}
+          <div className="font-semibold text-lg">{dept.name}</div>
+
+          {head && (
+            <div className="text-xs text-gray-700 mt-2">
+
+              <div className="font-semibold">
+                👑 {head.name}
+              </div>
+
+              <div className="text-blue-700 font-medium">
+                {head.role}
+              </div>
+
+              <div className="text-gray-600">
+                {head.email}
+              </div>
+
             </div>
           )}
+
         </div>
 
         {/* Employees */}
         {staff.length > 0 && (
-          <div className="flex gap-3 mt-3 flex-wrap justify-center">
+          <div className="flex gap-4 mt-4 flex-wrap justify-center">
 
             {staff.map((emp) => (
               <div
                 key={emp.email}
-                className="bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-sm shadow"
+                className="bg-green-100 border border-green-300 rounded-lg px-4 py-3 text-sm shadow text-center min-w-[180px]"
               >
-                {emp.name}
+                <div className="font-semibold text-gray-800">
+                  {emp.name}
+                </div>
+
+                <div className="text-xs text-gray-600 mt-1">
+                  {emp.email}
+                </div>
+
               </div>
             ))}
 
@@ -87,6 +116,7 @@ export default function HierarchyPage() {
             {children.map(renderDept)}
           </div>
         )}
+
       </div>
     );
   };
