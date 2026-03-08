@@ -181,9 +181,24 @@ export default function App() {
     };
   }, []);
 
-  const handleGoogleLogin = async () => {
-    await loginWithGoogle();
-  };
+  const handleLogin = async (email?: string) => {
+
+  if (import.meta.env.DEV && email) {
+
+    const fakeUser = {
+      email,
+      user_metadata: {
+        name: email,
+        full_name: email,
+      },
+    };
+
+    await handleUserLogin(fakeUser);
+    return;
+  }
+
+  await loginWithGoogle();
+};
 
   const handleLogout = async () => {
     await logout();
@@ -192,7 +207,7 @@ export default function App() {
   if (!user) {
     return (
       <>
-        <LoginPage onLogin={handleGoogleLogin} />
+        <LoginPage onLogin={handleLogin} />
 
         <button
           onClick={() => setShowHelp(true)}

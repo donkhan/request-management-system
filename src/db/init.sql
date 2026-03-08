@@ -3,29 +3,11 @@ CREATE TABLE role (
   name text PRIMARY KEY
 );
 
-insert into role (name)
-values
- ('FACULTY'),
- ('DIRECTOR'),
- ('SOFTWARE DEVELOPER'),
- ('PRO-VC'),
- ('ACCOUNTANT');
-
-
 CREATE TABLE department (
   name text NOT NULL UNIQUE,
   head_email text,
   parent_department text references department(name)
 );
-
-insert into department (name, head_email, parent_department)
-VALUES
-('VC-OFFICE','provc.praveen@cmr.edu.in',NULL),
-('SSCS','ashokkumar.t@cmr.edu.in','VC-OFFICE'),
-('ACCOUNTS','praveenkumar.r@cmr.edu.in','VC-OFFICE'),
-('TECH','routetokamil@gmail.com','VC-OFFICE');
-
-
 
 CREATE TABLE employee (
   email text PRIMARY KEY NOT NULL,
@@ -37,17 +19,6 @@ CREATE TABLE employee (
   CONSTRAINT employee_status_check
     CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED'))
 );
-
-INSERT INTO employee (email, name, role, department,  status)
-VALUES
-('provc.praveen@cmr.edu.in',  'Praveen',  'PROVC', 'VC-OFFICE',  'APPROVED'),
-('ashokkumar.t@cmr.edu.in',   'Ashok Kumar', 'DIRECTOR', 'SSCS',  'APPROVED'),
-('kamil.k@cmr.edu.in',        'Kamil Khan A', 'SOFTWARE DEVELOPER', 'TECH',  'APPROVED'),
-('routetokamil@gmail.com',     'Kamil',       'DIRECTOR', 'TECH',  'APPROVED'),
-('23f3004493@ds.study.iitm.ac.in',  'ProVC DEMO', 'PROVC', 'VC-OFFICE', 'APPROVED')
-;
-
-
 
 create table request (
   id uuid primary key default gen_random_uuid(),
@@ -85,3 +56,28 @@ create table audit_log (
   department text NOT NULL REFERENCES department(name),
   created_at timestamp with time zone default now()
 );
+
+insert into role (name)
+values
+ ('FACULTY'),
+ ('DIRECTOR'),
+ ('SOFTWARE DEVELOPER'),
+ ('PRO-VC'),
+ ('ACCOUNTANT');
+
+
+insert into department (name, head_email, parent_department)
+VALUES
+('VC-OFFICE','provc.praveen@cmr.edu.in',NULL),
+('SSCS','ashokkumar.t@cmr.edu.in','VC-OFFICE'),
+('ACCOUNTS','praveenkumar.r@cmr.edu.in','VC-OFFICE');
+
+
+INSERT INTO employee (email, name, role, department,  status)
+VALUES
+('provc.praveen@cmr.edu.in',  'Praveen',  'PRO-VC', 'VC-OFFICE',  'APPROVED'),
+('ashokkumar.t@cmr.edu.in',   'Ashok Kumar', 'DIRECTOR', 'SSCS',  'APPROVED'),
+('kamil.k@cmr.edu.in',        'Kamil Khan A', 'FACULTY', 'SSCS',  'APPROVED'),
+('praveenkumar.r@cmr.edu.in',  'Praveen Kumar',  'ACCOUNTANT', 'VC-OFFICE',  'APPROVED');
+
+
