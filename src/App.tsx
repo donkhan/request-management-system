@@ -5,6 +5,8 @@ import RequestFormPage from "./components/RequestFormPage";
 import UserProfileBadge from "./components/UserProfileBadge";
 import { loginWithGoogle, logout } from "./services/authService";
 import { fetchEmployeeProfile } from "./services/employeeService";
+import LoginPage from "./components/LoginPage";
+import HelpPage from "./components/HelpPage";
 import {
   getDashboardData,
   getMyDecisionHistory,
@@ -28,6 +30,7 @@ export default function App() {
   const [myDecisions, setMyDecisions] = useState<any[]>([]);
 
   const [showOnlyPending, setShowOnlyPending] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const filteredRequests = showOnlyPending
     ? myRequests.filter((r) => r.status === "PENDING")
@@ -184,23 +187,33 @@ export default function App() {
     await logout();
   };
 
-  // --------------------------------------------------
-  // Login Screen
-  // --------------------------------------------------
   if (!user) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-10 rounded-3xl shadow-xl text-center space-y-6">
-          <h1 className="text-2xl font-bold">Request Management System</h1>
+      <>
+        <LoginPage onLogin={handleGoogleLogin} />
 
-          <button
-            onClick={handleGoogleLogin}
-            className="bg-blue-600 text-white px-8 py-3 rounded-xl hover:bg-blue-700 transition w-full"
-          >
-            Login with Google
-          </button>
-        </div>
-      </div>
+        <button
+          onClick={() => setShowHelp(true)}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-blue-700 z-40"
+        >
+          ❓
+        </button>
+
+        {showHelp && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white max-h-[90vh] overflow-auto rounded-2xl shadow-xl relative">
+              <button
+                onClick={() => setShowHelp(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl"
+              >
+                ✕
+              </button>
+
+              <HelpPage />
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -394,6 +407,30 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Floating Help Button */}
+      <button
+        onClick={() => setShowHelp(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center text-xl hover:bg-blue-700 z-40"
+      >
+        ❓
+      </button>
+
+      {/* Help Popup */}
+      {showHelp && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white max-h-[90vh] overflow-auto rounded-2xl shadow-xl relative">
+            <button
+              onClick={() => setShowHelp(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-black text-xl"
+            >
+              ✕
+            </button>
+
+            <HelpPage />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
