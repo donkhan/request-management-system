@@ -303,6 +303,7 @@ export async function getMyDecisionHistory(email: string) {
       request:request_id (
         id,
         title,
+        description,
         department,
         created_by,
         status
