@@ -109,7 +109,7 @@ export default function App() {
   // --------------------------------------------------
   // Visibility Reset (Demo Lock Fix)
   // --------------------------------------------------
-  /*
+  
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -121,9 +121,9 @@ export default function App() {
           }
         });
 
-        sessionStorage.clear();
-        indexedDB.deleteDatabase("supabase.auth.token");
-        window.location.reload();
+        //sessionStorage.clear();
+        //indexedDB.deleteDatabase("supabase.auth.token");
+        //window.location.reload();
       }
     };
 
@@ -133,7 +133,7 @@ export default function App() {
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
-  */
+  
 
   // --------------------------------------------------
   // Auth Initialization
