@@ -109,7 +109,7 @@ export default function App() {
   // --------------------------------------------------
   // Visibility Reset (Demo Lock Fix)
   // --------------------------------------------------
-
+  /*
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -133,6 +133,7 @@ export default function App() {
       document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
+  */
 
   // --------------------------------------------------
   // Auth Initialization
