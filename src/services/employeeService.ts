@@ -78,11 +78,13 @@ export async function registerEmployee({
   name,
   department,
   role,
+  description,
 }: {
   email: string;
   name: string;
   department: string;
   role: string;
+  description: string;
 }) {
   const supabase = getSupabase();
 
@@ -117,7 +119,7 @@ export async function registerEmployee({
     .from("request")
     .insert({
       title: `New Employee Registration - ${name}`,
-      description: `Department: ${department} | Role: ${role}`,
+      description: description,
       created_by: email,
       current_approver: headEmail,
       status: "PENDING",

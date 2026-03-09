@@ -207,7 +207,7 @@ export async function performApprovalAction({
   // 🔹 1️⃣ Get request type first
   const { data: request, error: fetchError } = await supabase
     .from("request")
-    .select("type, created_by")
+    .select("type, created_by,description")
     .eq("id", requestId)
     .single();
 
@@ -229,17 +229,57 @@ export async function performApprovalAction({
 
   // 🔹 2️⃣ Special Logic for Registration Requests
   if (request.type === "NEW_EMPLOYEE_REGISTRATION") {
-    if (action === "APPROVED") {
+
+  const description = request.description || "";
+
+  // helper to extract values from description
+  const extract = (key: string) => {
+    const match = description.match(new RegExp(`${key}:\\s*([^|]+)`));
+    return match ? match[1].trim() : null;
+  };
+
+  const deptType = extract("Department Type");
+  const newDept = extract("New Department");
+  const parentDept = extract("Parent Department");
+  const isHead = extract("Is Department Head");
+
+  if (action === "APPROVED") {
+
+    // approve employee first
+    await supabase
+      .from("employee")
+      .update({ status: "APPROVED" })
+      .eq("email", request.created_by);
+
+    // if this is a new department request
+    if (deptType === "NEW" && newDept && parentDept) {
+
+      const headEmail = isHead === "YES" ? request.created_by : null;
+
+      // create department
+      await supabase
+        .from("department")
+        .insert({
+          name: newDept,
+          parent_department: parentDept,
+          head_email: headEmail,
+        });
+
+      // move employee to new department
       await supabase
         .from("employee")
-        .update({ status: "APPROVED" })
+        .update({ department: newDept })
         .eq("email", request.created_by);
     }
-
-    if (action === "REJECTED") {
-      await supabase.from("employee").delete().eq("email", request.created_by);
-    }
   }
+
+  if (action === "REJECTED") {
+    await supabase
+      .from("employee")
+      .delete()
+      .eq("email", request.created_by);
+  }
+}
 
   // 🔹 3️⃣ Normal Request Status Update
   const updateData = buildApprovalUpdate(action, createdBy, nextApprover);
