@@ -303,7 +303,7 @@ export default function RequestFormPage({
                 />
               </div>
             )}
-
+            <div className="relative z-10">
             <RequestActionButtons
               isApprovalMode={isApprovalMode}
               isViewMode={isViewMode}
@@ -324,13 +324,14 @@ export default function RequestFormPage({
               isDownloading={isDownloading}
               existingDocs={existingDocs}
             />
+            </div>
           </div>
 
           {/* RIGHT SIDE - AUDIT LOG */}
           <div className="lg:col-span-1">
             {requestToEdit && (
-              <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6">
-                <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
+                <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6 pointer-events-auto">
+              <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
                 <AuditLog
                   requestId={requestToEdit.id}
                   employeeMap={employeeMap}

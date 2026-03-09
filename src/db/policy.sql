@@ -12,6 +12,6 @@ to authenticated
 using (bucket_id = 'request-documents');
 
 CREATE POLICY "Allow select for all"
-ON request_audit_logs
+ON audit_log
 FOR SELECT
 USING (true);
