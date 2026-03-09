@@ -1,9 +1,10 @@
 import type { DecisionRow } from "../types";
+import type { Request } from "../types";
 
 interface Props {
   decisions: DecisionRow[];
   employeeMap: Record<string, string>;
-  onView: (request: Request) => void;
+  onView?: (request: Request) => void;
 }
 
 export default function DecisionHistoryTable({
@@ -79,12 +80,22 @@ export default function DecisionHistoryTable({
                 {/* View Button */}
                 <td className="px-6 py-4 text-center">
                   {request && (
-                    <button
-                        onClick={() => onView(request)}
-                        title="View Request"
-                        className="text-indigo-600 hover:text-indigo-800 transition"
-                      >
-                        {/* Eye Icon */}
+                        <button
+  onClick={() =>
+    onView?.({
+      id: request.id,
+      title: request.title,
+      description: request.description ?? "",
+      status: request.status,
+      department: request.department,
+      created_at: request.created_at ?? "",
+      created_by: request.created_by ?? null,
+      current_approver: request.current_approver ?? null,
+    })
+  }
+  title="View Request"
+  className="text-indigo-600 hover:text-indigo-800 transition"
+>
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           className="w-5 h-5"
