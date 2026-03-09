@@ -207,7 +207,7 @@ export default function RequestFormPage({
   };
 
   const handleApprovalAction = async (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED",
+    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED" | "COMPLETED",
   ) => {
     try {
       await performApprovalAction({

@@ -194,7 +194,7 @@ export async function performApprovalAction({
   department,
 }: {
   requestId: string;
-  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED";
+  action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED" | "COMPLETED";
   comment: string;
   currentUserEmail: string;
   createdBy: string;
