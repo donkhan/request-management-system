@@ -1,4 +1,12 @@
 import { getWaitingInfo } from "../utils/timeUtils";
+import {
+  Check,
+  ThumbsDown,
+  Edit,
+  Loader,
+  CheckCircle,
+  Eye
+} from "lucide-react";
 
 interface Request {
   id: string;
@@ -27,6 +35,67 @@ export default function RequestsTable({
   if (!requests || requests.length === 0) {
     return <div>No requests found.</div>;
   }
+
+  const renderStatus = (status: string) => {
+    switch (status) {
+      case "APPROVED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+            <Check size={14} />
+            Approved
+          </span>
+        );
+
+      case "REJECTED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+            <ThumbsDown size={14} />
+            Rejected
+          </span>
+        );
+
+      case "REJECTED_WITH_EDIT":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+            <Edit size={14} />
+            Reject With Edit
+          </span>
+        );
+
+      case "PROCESSING":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+            <Loader size={14} />
+            Approved & Being Processed
+          </span>
+        );
+
+      case "COMPLETED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+            <CheckCircle size={14} />
+            Approved & Processed
+          </span>
+        );
+
+      case "PENDING":
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+            Pending
+          </span>
+        );
+
+      case "DRAFT":
+        return (
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+            Draft
+          </span>
+        );
+
+      default:
+        return status;
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow-md overflow-hidden">
@@ -76,6 +145,7 @@ export default function RequestsTable({
               ? (employeeMap[request.current_approver] ??
                 request.current_approver)
               : "";
+
             return (
               <tr
                 key={request.id}
@@ -96,25 +166,7 @@ export default function RequestsTable({
                 </td>
 
                 <td className="px-6 py-4 text-sm">
-                  <span
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                      request.status === "APPROVED"
-                        ? "bg-green-100 text-green-700"
-                        : request.status === "REJECTED"
-                          ? "bg-red-100 text-red-700"
-                          : request.status === "PROCESSING"
-                            ? "bg-blue-100 text-blue-700"
-                            : request.status === "COMPLETED"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {request.status === "PROCESSING"
-                      ? "APPROVED & BEING PROCESSED"
-                      : request.status === "COMPLETED"
-                        ? "APPROVED & PROCESSED"
-                        : request.status}
-                  </span>
+                  {renderStatus(request.status)}
                 </td>
 
                 <td className="px-6 py-4 text-sm">
@@ -174,7 +226,7 @@ export default function RequestsTable({
                         onClick={() => onEdit(request)}
                         className="text-blue-600 hover:text-blue-800 transition"
                       >
-                        ✏️
+                        <Edit size={18} />
                       </button>
                     )}
 
@@ -183,7 +235,7 @@ export default function RequestsTable({
                         onClick={() => onView(request)}
                         className="text-indigo-600 hover:text-indigo-800 transition"
                       >
-                        👁
+                        <Eye size={18} />
                       </button>
                     )}
                   </div>
