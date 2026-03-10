@@ -94,7 +94,7 @@ export default function RequestModals({
           department={department}
           comment={comment}
           onClose={() => setShowSubmitForwardModal(false)}
-          onSuccess={async (targetEmail: string) => {
+          onSuccess={async (targetEmail?: string) => {
             try {
               setLoading("submit");
 
