@@ -28,9 +28,7 @@ interface Props {
   comment: string;
   department?: string;
 
-  handleDownloadAll: () => void;
-  isDownloading: boolean;
-  existingDocs: any[];
+  
 }
 
 export default function RequestActionButtons({
@@ -49,9 +47,6 @@ export default function RequestActionButtons({
   currentUser,
   comment,
   department,
-  handleDownloadAll,
-  isDownloading,
-  existingDocs,
 }: Props) {
 
   const status = requestToEdit?.status;
@@ -178,17 +173,7 @@ export default function RequestActionButtons({
             </button>
           )}
 
-          {/* DOWNLOAD */}
-          {requestToEdit && existingDocs.length > 0 && (
-            <button
-              onClick={handleDownloadAll}
-              disabled={isDownloading}
-              className="px-4 py-2 bg-green-600 text-white rounded-xl"
-            >
-              {isDownloading ? "Preparing Download..." : "Download Attachments"}
-            </button>
-          )}
-
+          
         </div>
       )}
     </div>

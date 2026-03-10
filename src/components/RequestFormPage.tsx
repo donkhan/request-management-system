@@ -240,9 +240,12 @@ export default function RequestFormPage({
     })),
   ];
 
+  const hasDocuments = existingDocs.length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
+
         {/* TOP BACK */}
         <div className="flex justify-start mb-6">
           <button
@@ -262,8 +265,10 @@ export default function RequestFormPage({
 
         {/* TWO COLUMN LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT SIDE - FORM */}
+
+          {/* LEFT SIDE */}
           <div className="lg:col-span-2">
+
             <RequestBasicFields
               title={title}
               description={description}
@@ -292,6 +297,19 @@ export default function RequestFormPage({
               isImageFile={isImageFile}
             />
 
+            {/* DOWNLOAD BUTTON MOVED HERE */}
+            {hasDocuments && (
+              <div className="mt-4 mb-6">
+                <button
+                  onClick={handleDownloadAll}
+                  disabled={isDownloading}
+                  className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+                >
+                  {isDownloading ? "Preparing ZIP..." : "Download Documents"}
+                </button>
+              </div>
+            )}
+
             {isApprovalMode && (
               <div className="mb-8">
                 <textarea
@@ -303,35 +321,34 @@ export default function RequestFormPage({
                 />
               </div>
             )}
+
             <div className="relative z-10">
-            <RequestActionButtons
-              isApprovalMode={isApprovalMode}
-              isViewMode={isViewMode}
-              canDiscard={canDiscard}
-              loading={loading}
-              handleDownloadAll={handleDownloadAll}
-              handleSaveDraft={handleSaveDraft}
-              handleSubmit={handleSubmit}
-              handleDiscard={handleDiscard}
-              handleApprovalAction={handleApprovalAction}
-              setShowForwardModal={setShowForwardModal}
-              setShowSubmitForwardModal={setShowSubmitForwardModal}
-              setShowProcessingModal={setShowProcessingModal}
-              requestToEdit={requestToEdit}
-              currentUser={currentUser}
-              comment={comment}
-              department={department}
-              isDownloading={isDownloading}
-              existingDocs={existingDocs}
-            />
+              <RequestActionButtons
+                isApprovalMode={isApprovalMode}
+                isViewMode={isViewMode}
+                canDiscard={canDiscard}
+                loading={loading}
+                handleSaveDraft={handleSaveDraft}
+                handleSubmit={handleSubmit}
+                handleDiscard={handleDiscard}
+                handleApprovalAction={handleApprovalAction}
+                setShowForwardModal={setShowForwardModal}
+                setShowSubmitForwardModal={setShowSubmitForwardModal}
+                setShowProcessingModal={setShowProcessingModal}
+                requestToEdit={requestToEdit}
+                currentUser={currentUser}
+                comment={comment}
+                department={department}
+              />
             </div>
+
           </div>
 
-          {/* RIGHT SIDE - AUDIT LOG */}
+          {/* RIGHT SIDE */}
           <div className="lg:col-span-1">
             {requestToEdit && (
-                <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6 pointer-events-auto">
-              <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
+              <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6">
+                <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
                 <AuditLog
                   requestId={requestToEdit.id}
                   employeeMap={employeeMap}
@@ -339,6 +356,7 @@ export default function RequestFormPage({
               </div>
             )}
           </div>
+
         </div>
 
         {/* BOTTOM BACK */}
@@ -350,6 +368,7 @@ export default function RequestFormPage({
             ← Back
           </button>
         </div>
+
       </div>
 
       <RequestModals
