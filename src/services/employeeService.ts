@@ -9,7 +9,7 @@ export async function fetchEmployeeProfile(email: string) {
     .from("employee")
     .select("*")
     .eq("email", email)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data ?? null;

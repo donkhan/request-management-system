@@ -1,3 +1,10 @@
+delete from audit_log;
+delete from document;
+delete from request;
+delete from employee;
+delete from department;
+
+
 insert into department (name, head_email, parent_department)
 VALUES
 ('VC-OFFICE','23f3004493@ds.study.iitm.ac.in',NULL),
