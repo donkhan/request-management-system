@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
 import RequestActionButtons from "../components/RequestActionButtons";
 import DocumentUploader from "../components/DocumentUploader";
@@ -94,7 +94,7 @@ export default function RequestFormPage({
 
     try {
       setIsDownloading(true);
-      var fileName = title + "-" + currentUser.email
+      var fileName = title + "-" + currentUser.email;
       await downloadAttachmentsAsZip(requestToEdit.id, fileName, existingDocs);
     } catch (err: any) {
       alert(err.message || "Download failed");
@@ -107,8 +107,10 @@ export default function RequestFormPage({
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+    const files = e.target.files;
+    if (!files) return;
+
+    setFiles((prev) => [...prev, ...Array.from(files)]);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -208,7 +210,12 @@ export default function RequestFormPage({
   };
 
   const handleApprovalAction = async (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED" | "COMPLETED",
+    action:
+      | "APPROVED"
+      | "REJECTED"
+      | "REJECTED_WITH_EDIT"
+      | "RECOMMENDED"
+      | "COMPLETED",
   ) => {
     try {
       await performApprovalAction({
@@ -246,7 +253,6 @@ export default function RequestFormPage({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-
         {/* TOP BACK */}
         <div className="flex justify-start mb-6">
           <button
@@ -266,10 +272,8 @@ export default function RequestFormPage({
 
         {/* TWO COLUMN LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
           {/* LEFT SIDE */}
           <div className="lg:col-span-2">
-
             <RequestBasicFields
               title={title}
               description={description}
@@ -280,7 +284,7 @@ export default function RequestFormPage({
 
             <DocumentUploader
               canUpload={canUpload}
-              fileInputRef={fileInputRef}
+              fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
               handleFileChange={handleFileChange}
               handleDrop={handleDrop}
               openFileDialog={openFileDialog}
@@ -342,7 +346,6 @@ export default function RequestFormPage({
                 department={department}
               />
             </div>
-
           </div>
 
           {/* RIGHT SIDE */}
@@ -357,7 +360,6 @@ export default function RequestFormPage({
               </div>
             )}
           </div>
-
         </div>
 
         {/* BOTTOM BACK */}
@@ -369,7 +371,6 @@ export default function RequestFormPage({
             ← Back
           </button>
         </div>
-
       </div>
 
       <RequestModals
