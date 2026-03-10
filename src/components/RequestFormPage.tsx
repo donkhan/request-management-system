@@ -94,7 +94,8 @@ export default function RequestFormPage({
 
     try {
       setIsDownloading(true);
-      await downloadAttachmentsAsZip(requestToEdit.id, title, existingDocs);
+      var fileName = title + "-" + currentUser.email
+      await downloadAttachmentsAsZip(requestToEdit.id, fileName, existingDocs);
     } catch (err: any) {
       alert(err.message || "Download failed");
     } finally {
