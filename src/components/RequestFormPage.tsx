@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { downloadAttachmentsAsZip } from "../utils/downloadAttachments";
 import RequestActionButtons from "../components/RequestActionButtons";
 import DocumentUploader from "../components/DocumentUploader";
@@ -94,7 +94,8 @@ export default function RequestFormPage({
 
     try {
       setIsDownloading(true);
-      await downloadAttachmentsAsZip(requestToEdit.id, title, existingDocs);
+      var fileName = title + "-" + currentUser.email;
+      await downloadAttachmentsAsZip(requestToEdit.id, fileName, existingDocs);
     } catch (err: any) {
       alert(err.message || "Download failed");
     } finally {
@@ -106,8 +107,10 @@ export default function RequestFormPage({
     /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    setFiles((prev) => [...prev, ...Array.from(e.target.files)]);
+    const files = e.target.files;
+    if (!files) return;
+
+    setFiles((prev) => [...prev, ...Array.from(files)]);
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -207,7 +210,12 @@ export default function RequestFormPage({
   };
 
   const handleApprovalAction = async (
-    action: "APPROVED" | "REJECTED" | "REJECTED_WITH_EDIT" | "RECOMMENDED" | "COMPLETED",
+    action:
+      | "APPROVED"
+      | "REJECTED"
+      | "REJECTED_WITH_EDIT"
+      | "RECOMMENDED"
+      | "COMPLETED",
   ) => {
     try {
       await performApprovalAction({
@@ -240,6 +248,8 @@ export default function RequestFormPage({
     })),
   ];
 
+  const hasDocuments = existingDocs.length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 py-12 px-6">
       <div className="max-w-5xl mx-auto bg-white rounded-3xl shadow-xl p-10">
@@ -262,7 +272,7 @@ export default function RequestFormPage({
 
         {/* TWO COLUMN LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT SIDE - FORM */}
+          {/* LEFT SIDE */}
           <div className="lg:col-span-2">
             <RequestBasicFields
               title={title}
@@ -274,7 +284,7 @@ export default function RequestFormPage({
 
             <DocumentUploader
               canUpload={canUpload}
-              fileInputRef={fileInputRef}
+              fileInputRef={fileInputRef as React.RefObject<HTMLInputElement>}
               handleFileChange={handleFileChange}
               handleDrop={handleDrop}
               openFileDialog={openFileDialog}
@@ -292,6 +302,19 @@ export default function RequestFormPage({
               isImageFile={isImageFile}
             />
 
+            {/* DOWNLOAD BUTTON MOVED HERE */}
+            {hasDocuments && (
+              <div className="mt-4 mb-6">
+                <button
+                  onClick={handleDownloadAll}
+                  disabled={isDownloading}
+                  className="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+                >
+                  {isDownloading ? "Preparing ZIP..." : "Download Documents"}
+                </button>
+              </div>
+            )}
+
             {isApprovalMode && (
               <div className="mb-8">
                 <textarea
@@ -303,35 +326,33 @@ export default function RequestFormPage({
                 />
               </div>
             )}
+
             <div className="relative z-10">
-            <RequestActionButtons
-              isApprovalMode={isApprovalMode}
-              isViewMode={isViewMode}
-              canDiscard={canDiscard}
-              loading={loading}
-              handleDownloadAll={handleDownloadAll}
-              handleSaveDraft={handleSaveDraft}
-              handleSubmit={handleSubmit}
-              handleDiscard={handleDiscard}
-              handleApprovalAction={handleApprovalAction}
-              setShowForwardModal={setShowForwardModal}
-              setShowSubmitForwardModal={setShowSubmitForwardModal}
-              setShowProcessingModal={setShowProcessingModal}
-              requestToEdit={requestToEdit}
-              currentUser={currentUser}
-              comment={comment}
-              department={department}
-              isDownloading={isDownloading}
-              existingDocs={existingDocs}
-            />
+              <RequestActionButtons
+                isApprovalMode={isApprovalMode}
+                isViewMode={isViewMode}
+                canDiscard={canDiscard}
+                loading={loading}
+                handleSaveDraft={handleSaveDraft}
+                handleSubmit={handleSubmit}
+                handleDiscard={handleDiscard}
+                handleApprovalAction={handleApprovalAction}
+                setShowForwardModal={setShowForwardModal}
+                setShowSubmitForwardModal={setShowSubmitForwardModal}
+                setShowProcessingModal={setShowProcessingModal}
+                requestToEdit={requestToEdit}
+                currentUser={currentUser}
+                comment={comment}
+                department={department}
+              />
             </div>
           </div>
 
-          {/* RIGHT SIDE - AUDIT LOG */}
+          {/* RIGHT SIDE */}
           <div className="lg:col-span-1">
             {requestToEdit && (
-                <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6 pointer-events-auto">
-              <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
+              <div className="bg-gray-50 rounded-2xl p-4 border sticky top-6">
+                <h2 className="text-lg font-semibold mb-4">Audit Log</h2>
                 <AuditLog
                   requestId={requestToEdit.id}
                   employeeMap={employeeMap}

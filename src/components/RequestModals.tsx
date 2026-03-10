@@ -94,11 +94,12 @@ export default function RequestModals({
           department={department}
           comment={comment}
           onClose={() => setShowSubmitForwardModal(false)}
-          onSuccess={async (targetEmail: string) => {
+          onSuccess={async (targetEmail?: string) => {
             try {
               setLoading("submit");
 
               await saveRequestWithDocuments({
+                currentUserEmail: currentUser.email, 
                 isEditMode,
                 requestToEdit,
                 title,

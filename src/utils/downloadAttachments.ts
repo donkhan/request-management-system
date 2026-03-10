@@ -9,7 +9,7 @@ interface Attachment {
 
 export const downloadAttachmentsAsZip = async (
   requestId: string,
-  requestTitle: string,
+  fileName: string,
   attachments: Attachment[],
   bucketName: string = "request-documents"
 ) => {
@@ -44,7 +44,7 @@ export const downloadAttachmentsAsZip = async (
 
   const zipBlob = await zip.generateAsync({ type: "blob" });
 
-  const safeTitle = requestTitle
+  const safeTitle = fileName
     .replace(/[\\/:*?"<>|]/g, "")
     .replace(/\s+/g, "_")
     .substring(0, 80);
