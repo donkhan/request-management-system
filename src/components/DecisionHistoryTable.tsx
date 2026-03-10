@@ -1,6 +1,14 @@
 import type { DecisionRow } from "../types";
 import type { Request } from "../types";
 
+import {
+  Check,
+  ThumbsDown,
+  Edit,
+  CheckCircle,
+  Flag
+} from "lucide-react";
+
 interface Props {
   decisions: DecisionRow[];
   employeeMap: Record<string, string>;
@@ -19,6 +27,53 @@ export default function DecisionHistoryTable({
       </div>
     );
   }
+
+  const renderDecision = (action: string) => {
+    switch (action) {
+      case "APPROVED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+            <Check size={14} />
+            Approved
+          </span>
+        );
+
+      case "REJECTED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+            <ThumbsDown size={14} />
+            Rejected
+          </span>
+        );
+
+      case "REJECTED_WITH_EDIT":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+            <Edit size={14} />
+            Reject With Edit
+          </span>
+        );
+
+      case "RECOMMENDED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+            <CheckCircle size={14} />
+            Recommended
+          </span>
+        );
+
+      case "COMPLETED":
+        return (
+          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+            <Flag size={14} />
+            Completed
+          </span>
+        );
+
+      default:
+        return action;
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl shadow overflow-hidden">
@@ -58,15 +113,7 @@ export default function DecisionHistoryTable({
 
                 {/* Decision */}
                 <td className="px-6 py-4">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      row.action === "APPROVED"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {row.action}
-                  </span>
+                  {renderDecision(row.action)}
                 </td>
 
                 {/* Date */}
