@@ -13,7 +13,7 @@ interface Props {
   comment?: string;
   action?: "RECOMMENDED" | "PROCESSING";
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (email?: string) => void;
 }
 
 export default function ForwardModal({
@@ -44,42 +44,42 @@ export default function ForwardModal({
   }, [selectedDept]);
 
   const handleForward = async () => {
-  let targetEmail: string | null = selectedUser;
+    let targetEmail: string | null = selectedUser;
 
-  if (mode === "HEAD") {
-    targetEmail = await getDepartmentHead(selectedDept);
-  }
+    if (mode === "HEAD") {
+      targetEmail = await getDepartmentHead(selectedDept);
+    }
 
-  if (!targetEmail) {
-    alert("Please select a valid user");
-    return;
-  }
+    if (!targetEmail) {
+      alert("Please select a valid user");
+      return;
+    }
 
-  // SUBMIT FLOW
-  if (!requestId) {
-    onSuccess(targetEmail);
+    // SUBMIT FLOW
+    if (!requestId) {
+      onSuccess(targetEmail);
+      onClose();
+      return;
+    }
+
+    // APPROVAL FLOW
+    if (!comment?.trim()) {
+      alert("Comment is required");
+      return;
+    }
+
+    await forwardRequestToUser({
+      requestId,
+      newApproverEmail: targetEmail,
+      currentUserEmail,
+      department,
+      comment,
+      action,
+    });
+
+    onSuccess();
     onClose();
-    return;
-  }
-
-  // APPROVAL FLOW
-  if (!comment?.trim()) {
-    alert("Comment is required");
-    return;
-  }
-
-  await forwardRequestToUser({
-    requestId,
-    newApproverEmail: targetEmail,
-    currentUserEmail,
-    department,
-    comment,
-    action,
-  });
-
-  onSuccess();
-  onClose();
-};
+  };
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center">

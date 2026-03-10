@@ -99,6 +99,7 @@ export default function RequestModals({
               setLoading("submit");
 
               await saveRequestWithDocuments({
+                currentUserEmail: currentUser.email, 
                 isEditMode,
                 requestToEdit,
                 title,
