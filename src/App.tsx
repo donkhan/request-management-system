@@ -204,6 +204,16 @@ export default function App() {
     loadEmployees();
   }, []);
 
+  useEffect(() => {
+  if (employeeProfile?.status === "PENDING") {
+    const timer = setTimeout(() => {
+      logout();
+    }, 3000); // 3 seconds
+
+    return () => clearTimeout(timer);
+  }
+}, [employeeProfile]);
+
   const handleLogin = async (email?: string) => {
     if (import.meta.env.DEV && email) {
       const fakeUser = {
