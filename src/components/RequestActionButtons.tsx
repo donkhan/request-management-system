@@ -27,8 +27,6 @@ interface Props {
   currentUser: any;
   comment: string;
   department?: string;
-
-  
 }
 
 export default function RequestActionButtons({
@@ -61,7 +59,7 @@ export default function RequestActionButtons({
           <button
             onClick={handleSaveDraft}
             disabled={loading !== null}
-            className="px-6 py-3 bg-gray-500 text-white rounded-xl"
+            className="px-5 py-2.5 bg-gray-500 text-white rounded-xl"
           >
             Save Draft
           </button>
@@ -69,7 +67,7 @@ export default function RequestActionButtons({
           <button
             onClick={handleSubmit}
             disabled={loading !== null}
-            className="px-8 py-3 bg-blue-600 text-white rounded-xl"
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl"
           >
             Submit
           </button>
@@ -77,7 +75,7 @@ export default function RequestActionButtons({
           <button
             onClick={() => setShowSubmitForwardModal(true)}
             disabled={loading !== null}
-            className="px-8 py-3 bg-indigo-600 text-white rounded-xl"
+            className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl"
           >
             Assign
           </button>
@@ -85,7 +83,7 @@ export default function RequestActionButtons({
           {canDiscard && (
             <button
               onClick={handleDiscard}
-              className="bg-gray-600 text-white px-5 py-2 rounded-lg hover:bg-gray-700"
+              className="px-5 py-2.5 bg-gray-600 text-white rounded-xl hover:bg-gray-700"
             >
               Discard Draft
             </button>
@@ -95,14 +93,14 @@ export default function RequestActionButtons({
 
       {/* APPROVAL / PROCESSING MODE */}
       {isApprovalMode && (
-        <div className="flex flex-col gap-4 md:flex-row md:justify-between mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-8">
 
           {/* APPROVAL BUTTONS (hidden during processing) */}
           {!isProcessingStage && (
             <>
               <button
                 onClick={() => handleApprovalAction("APPROVED")}
-                className="px-4 py-2 bg-green-600 text-white rounded-xl"
+                className="px-5 py-2.5 bg-green-600 text-white rounded-xl"
               >
                 Approve
               </button>
@@ -124,56 +122,55 @@ export default function RequestActionButtons({
                     alert(err.message || "Approval failed");
                   }
                 }}
-                className="px-4 py-2 bg-teal-600 text-white rounded-xl"
+                className="px-5 py-2.5 bg-teal-600 text-white rounded-xl"
               >
                 Approve & Send to Processing
               </button>
 
               <button
                 onClick={() => handleApprovalAction("REJECTED")}
-                className="px-4 py-2 bg-red-600 text-white rounded-xl"
+                className="px-5 py-2.5 bg-red-600 text-white rounded-xl"
               >
                 Reject
               </button>
 
               <button
                 onClick={() => handleApprovalAction("REJECTED_WITH_EDIT")}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-xl"
+                className="px-5 py-2.5 bg-yellow-600 text-white rounded-xl"
               >
                 Reject With Edit
               </button>
             </>
           )}
 
-          {/* RECOMMEND (allowed even during processing) */}
+          {/* RECOMMEND */}
           <button
             onClick={() => handleApprovalAction("RECOMMENDED")}
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl"
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-xl"
           >
             Recommend
           </button>
 
-          {/* FORWARD (not during processing) */}
+          {/* FORWARD */}
           {!isProcessingStage && (
             <button
               onClick={() => setShowForwardModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-xl"
+              className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl"
             >
               Forward
             </button>
           )}
 
-          {/* COMPLETE (only during processing) */}
+          {/* COMPLETE */}
           {isProcessingStage && (
             <button
               onClick={() => handleApprovalAction("COMPLETED")}
-              className="px-4 py-2 bg-gray-700 text-white rounded-xl"
+              className="px-5 py-2.5 bg-gray-700 text-white rounded-xl"
             >
               Complete
             </button>
           )}
 
-          
         </div>
       )}
     </div>
