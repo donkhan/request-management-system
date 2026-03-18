@@ -83,7 +83,7 @@ export default function RequestActionButtons({
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl"
           >
             <Upload size={18} />
-            Submit
+            Submit Request
           </button>
 
           <button
@@ -92,7 +92,7 @@ export default function RequestActionButtons({
             className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl"
           >
             <Forward size={18} />
-            Assign
+            Direct Request
           </button>
 
           {canDiscard && (
@@ -168,7 +168,7 @@ export default function RequestActionButtons({
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl"
           >
             <CheckCircle size={18} />
-            Recommend
+            Recommend Approval
           </button>
 
           {!isProcessingStage && (
@@ -177,7 +177,7 @@ export default function RequestActionButtons({
               className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl"
             >
               <Forward size={18} />
-              Forward
+              Ask For Opinion
             </button>
           )}
 
