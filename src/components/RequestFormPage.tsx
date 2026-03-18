@@ -50,7 +50,9 @@ export default function RequestFormPage({
   const [files, setFiles] = useState<File[]>([]);
   const [existingDocs, setExistingDocs] = useState<any[]>([]);
   const [deletedDocIds, setDeletedDocIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState<"draft" | "submit" | null>(null);
+  const [loading, setLoading] = useState<
+  "draft" | "submit" | "discard" | null
+>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -163,8 +165,8 @@ export default function RequestFormPage({
     if (!confirmed) return;
 
     try {
+      setLoading("discard"); 
       await deleteDraftRequest(requestToEdit.id, existingDocs || []);
-
       onSuccess();
       onBack();
     } catch (err: any) {
@@ -397,6 +399,20 @@ export default function RequestFormPage({
         existingDocsState={existingDocs}
         deletedDocIds={deletedDocIds}
       />
+      {loading && (
+  <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="bg-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3">
+      <div className="animate-spin h-5 w-5 border-2 border-gray-700 border-t-transparent rounded-full"></div>
+
+      <span className="text-gray-800 font-medium">
+        {loading === "draft" && "Saving draft..."}
+        {loading === "submit" && "Submitting request..."}
+        {loading === "discard" && "Discarding draft..."}
+      </span>
     </div>
+  </div>
+)}
+    </div>
+    
   );
 }
