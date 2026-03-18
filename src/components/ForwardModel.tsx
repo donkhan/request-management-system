@@ -5,6 +5,7 @@ import {
 } from "../services/departmentService";
 import { getApprovedEmployeesByDepartment } from "../services/employeeService";
 import { forwardRequestToUser } from "../services/requestService";
+import toast from "react-hot-toast";
 
 interface Props {
   requestId: string;
@@ -51,7 +52,7 @@ export default function ForwardModal({
     }
 
     if (!targetEmail) {
-      alert("Please select a valid user");
+      toast.error("Please select a valid user");
       return;
     }
 
@@ -64,7 +65,7 @@ export default function ForwardModal({
 
     // APPROVAL FLOW
     if (!comment?.trim()) {
-      alert("Comment is required");
+      toast.error("Comment is required");
       return;
     }
 

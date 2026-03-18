@@ -6,6 +6,8 @@ import DocumentPreviewGrid from "../components/DocumentPreviewGrid";
 import RequestModals from "../components/RequestModals";
 import RequestBasicFields from "../components/RequestBasicFields";
 import RequestHeader from "../components/RequestHeader";
+import toast from "react-hot-toast";
+
 
 import {
   saveRequestWithDocuments,
@@ -179,12 +181,12 @@ export default function RequestFormPage({
       setLoading("submit");
 
       if (!title.trim()) {
-        alert("Title is required.");
+        toast.error("Title is required.");
         return;
       }
 
       if (!description.trim()) {
-        alert("Description is required.");
+        toast.error("Description is required.");
         return;
       }
 
@@ -233,7 +235,7 @@ export default function RequestFormPage({
       onSuccess();
       onBack();
     } catch (err: any) {
-      alert(err.message || "Approval action failed");
+      toast.error(err.message || "Approval action failed");
     }finally {
       setLoading(null);
     }
