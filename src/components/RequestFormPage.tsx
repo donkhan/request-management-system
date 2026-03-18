@@ -51,7 +51,7 @@ export default function RequestFormPage({
   const [existingDocs, setExistingDocs] = useState<any[]>([]);
   const [deletedDocIds, setDeletedDocIds] = useState<string[]>([]);
   const [loading, setLoading] = useState<
-  "draft" | "submit" | "discard" | null
+  "draft" | "submit" | "discard" | "approval" | null
 >(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -220,6 +220,7 @@ export default function RequestFormPage({
       | "COMPLETED",
   ) => {
     try {
+      setLoading("approval"); 
       await performApprovalAction({
         requestId: requestToEdit.id,
         action,
@@ -233,6 +234,8 @@ export default function RequestFormPage({
       onBack();
     } catch (err: any) {
       alert(err.message || "Approval action failed");
+    }finally {
+      setLoading(null);
     }
   };
 
@@ -408,6 +411,7 @@ export default function RequestFormPage({
         {loading === "draft" && "Saving draft..."}
         {loading === "submit" && "Submitting request..."}
         {loading === "discard" && "Discarding draft..."}
+        {loading === "approval" && "Processing..."}
       </span>
     </div>
   </div>
